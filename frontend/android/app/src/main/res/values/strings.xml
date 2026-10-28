@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Saqta.kz</string>
+    <string name="title_activity_main">Saqta.kz</string>
+    <string name="package_name">kz.saqta.app</string>
+    <string name="custom_url_scheme">kz.saqta.app</string>
+</resources>
