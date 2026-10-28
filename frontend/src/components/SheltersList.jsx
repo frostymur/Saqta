@@ -1,57 +1,55 @@
-import React from "react";
-import { Building2, PhoneCall, MapPin, Check, Heart, Shield } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Building2, PhoneCall, MapPin, Shield } from "lucide-react";
+import { KAZAKHSTAN_REGIONS } from "../data/regionsData";
 
-export default function SheltersList() {
-  const shelters = [
-    {
-      name: "Средняя школа №12",
-      address: "г. Петропавловск, ул. Пушкина, 45",
-      phone: "+7 (7152) 46-21-30",
-      capacity: "250 мест",
-      features: "Горячее питание, медпункт, психолог, детский уголок"
-    },
-    {
-      name: "Средняя школа №14",
-      address: "г. Петропавловск, ул. Абая, 102",
-      phone: "+7 (7152) 33-14-15",
-      capacity: "300 мест",
-      features: "Спальные места, комната матери и ребенка, охрана полицией"
-    },
-    {
-      name: "СКППК (Колледж педагогики и права)",
-      address: "г. Петропавловск, ул. Конституции Казахстана, 65",
-      phone: "+7 (7152) 46-12-88",
-      capacity: "400 мест",
-      features: "Столовая, душевые, фельдшерский пункт, склад гуманитарной помощи"
-    },
-    {
-      name: "Дворец спорта им. А. Винокурова",
-      address: "г. Петропавловск, ул. Жамбыла, 84",
-      phone: "+7 (7152) 50-80-90",
-      capacity: "500 мест",
-      features: "Большой резервный пункт, полевая кухня, волонтерский штаб"
-    }
-  ];
+export default function SheltersList({ selectedRegionId }) {
+  const defaultRegion = KAZAKHSTAN_REGIONS.find((r) => r.id === selectedRegionId) || KAZAKHSTAN_REGIONS[0];
+  const [activeRegion, setActiveRegion] = useState(defaultRegion);
+
+  useEffect(() => {
+    const found = KAZAKHSTAN_REGIONS.find((r) => r.id === selectedRegionId);
+    if (found) setActiveRegion(found);
+  }, [selectedRegionId]);
 
   return (
     <section id="shelters-section" className="py-14 px-4 sm:px-8 bg-white border-b border-slate-200">
       <div className="max-w-6xl mx-auto">
-        <div className="max-w-3xl mb-8">
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1.5">
-            <Building2 className="w-4 h-4 text-emerald-700" />
-            Безопасное размещение
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1.5">
+              <Building2 className="w-4 h-4 text-emerald-700" />
+              Безопасное размещение граждан
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Пункты временного размещения (ПВР): {activeRegion.name}
+            </h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Действующие эвакуационные пункты с горячим питанием, спальными местами и круглосуточным дежурством медиков:
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Пункты временного размещения (ПВР) в Петропавловске
-          </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            Если ваш дом оказался в зоне подтопления, эти эвакуационные пункты уже открыты, согреты и принимают жителей круглосуточно:
-          </p>
+
+          {/* Quick city switcher */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {KAZAKHSTAN_REGIONS.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setActiveRegion(r)}
+                className={`px-2.5 py-1 rounded-lg border font-medium transition-all whitespace-nowrap ${
+                  activeRegion.id === r.id
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {r.shortName}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* 4 Shelters Grid */}
+        {/* Shelters Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {shelters.map((s, idx) => (
+          {activeRegion.shelters.map((s, idx) => (
             <div
               key={idx}
               className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 shadow-sm hover:border-emerald-300 transition-colors flex flex-col justify-between"
@@ -82,18 +80,18 @@ export default function SheltersList() {
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 transition-colors"
                 >
                   <PhoneCall className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Позвонить дежурному: {s.phone}</span>
+                  <span>Дежурный комендант: {s.phone}</span>
                 </a>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Reassurance Note */}
+        {/* Reassurance Banner */}
         <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-950 flex items-center gap-3">
           <Shield className="w-5 h-5 text-emerald-700 flex-shrink-0" />
           <span>
-            <strong>Важно:</strong> Проживание, трехразовое горячее питание и медицинская помощь во всех пунктах временного размещения предоставляются <strong>бесплатно за счет государственного резерва</strong>.
+            <strong>Государственная гарантия:</strong> Размещение, трехразовое горячее питание и медицинская помощь во всех пунктах временного размещения предоставляются <strong>бесплатно за счет государственного резерва Республики Казахстан</strong>.
           </span>
         </div>
       </div>

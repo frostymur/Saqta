@@ -8,34 +8,54 @@ import SheltersList from "./components/SheltersList";
 import EmergencyHelp from "./components/EmergencyHelp";
 import CivicFooter from "./components/CivicFooter";
 import StaffModal from "./components/StaffModal";
+import { KAZAKHSTAN_REGIONS } from "./data/regionsData";
 
 export default function App() {
   const [isStaffOpen, setIsStaffOpen] = useState(false);
-  const [staffUser, setStaffUser] = useState(null);
+  const [selectedRegionId, setSelectedRegionId] = useState("all");
+
+  const selectedRegion = KAZAKHSTAN_REGIONS.find((r) => r.id === selectedRegionId) || null;
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      {/* 1. Civic Header */}
-      <CivicHeader onOpenStaff={() => setIsStaffOpen(true)} />
+      {/* 1. National Civic Header with Regional Switcher */}
+      <CivicHeader
+        selectedRegionId={selectedRegionId}
+        onSelectRegion={(id) => setSelectedRegionId(id)}
+        onOpenStaff={() => setIsStaffOpen(true)}
+      />
 
       <main className="flex-1 w-full">
-        {/* 2. City Status Board (Memorable Hero Element) */}
-        <HeroStatus />
+        {/* 2. National / Regional Status Board */}
+        <HeroStatus
+          selectedRegionId={selectedRegionId}
+          selectedRegion={selectedRegion}
+          onSelectRegion={(id) => setSelectedRegionId(id)}
+        />
 
         {/* 3. "What is happening in my district?" Interactive Checker */}
-        <DistrictCheck />
+        <DistrictCheck
+          selectedRegionId={selectedRegionId}
+          onSelectRegion={(id) => setSelectedRegionId(id)}
+        />
 
-        {/* 4. River Esil Water Gauges (Where is water coming from) */}
-        <RiverGauges />
+        {/* 4. River Gauges & Dams Margin for Selected Basin */}
+        <RiverGauges
+          selectedRegionId={selectedRegionId}
+        />
 
         {/* 5. 3-Step Resident Action Checklist (Without panic) */}
         <ActionChecklist />
 
-        {/* 6. Official Evacuation Shelters (PVR) in Petropavlovsk */}
-        <SheltersList />
+        {/* 6. Evacuation Shelters (PVR) */}
+        <SheltersList
+          selectedRegionId={selectedRegionId}
+        />
 
-        {/* 7. Emergency 112 Hotline & Resident Rescue Alert Form */}
-        <EmergencyHelp />
+        {/* 7. Emergency 112 Hotline & Citizen Help Form */}
+        <EmergencyHelp
+          selectedRegionId={selectedRegionId}
+        />
       </main>
 
       {/* 8. Official Civic Footer */}
@@ -46,7 +66,6 @@ export default function App() {
         isOpen={isStaffOpen}
         onClose={() => setIsStaffOpen(false)}
         onLoginSuccess={(user) => {
-          setStaffUser(user);
           alert(`Вход выполнен успешно: ${user.full_name} (${user.role})`);
         }}
       />

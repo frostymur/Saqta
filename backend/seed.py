@@ -25,7 +25,7 @@ def seed_database():
                     email="operator@saqta.kz",
                     password_hash=hash_password("oper123"),
                     role="operator",
-                    full_name="Сериков Нурлан Бауржанович (Дежурный оператор)"
+                    full_name="Сериков Нурлан Бауржанович (Дежурный оператор ДЧС)"
                 ),
                 User(
                     email="guest@saqta.kz",
@@ -36,52 +36,157 @@ def seed_database():
             ]
             db.add_all(users_to_seed)
             db.commit()
-            print("✓ 3 демо-пользователя успешно созданы (admin, operator, guest)")
 
-        # 2. Проверяем гидропосты
-        existing_stations = db.query(Station).count()
-        if existing_stations == 0:
-            stations_data = [
-                {
-                    "name": "Сергеевское водохранилище",
-                    "region": "Петропавловск (СКО)",
-                    "lat": 53.8824,
-                    "lng": 67.4111,
-                    "hazard_type": "flood",
-                    "status": "active",
-                    "thresholds": {"warn_level": 800, "crit_level": 1100, "max_rate_of_rise": 15}
-                },
-                {
-                    "name": "Гидропост с. Покровка",
-                    "region": "Петропавловск (СКО)",
-                    "lat": 54.2678,
-                    "lng": 68.8520,
-                    "hazard_type": "flood",
-                    "status": "active",
-                    "thresholds": {"warn_level": 950, "crit_level": 1100, "max_rate_of_rise": 12}
-                },
-                {
-                    "name": "Гидропост г. Петропавловск (Мост)",
-                    "region": "Петропавловск (СКО)",
-                    "lat": 54.8753,
-                    "lng": 69.1389,
-                    "hazard_type": "flood",
-                    "status": "active",
-                    "thresholds": {"warn_level": 940, "crit_level": 980, "max_rate_of_rise": 10}
-                },
-                {
-                    "name": "Пос. Заречный (Зона поймы)",
-                    "region": "Петропавловск (СКО)",
-                    "lat": 54.9120,
-                    "lng": 69.1650,
-                    "hazard_type": "flood",
-                    "status": "active",
-                    "thresholds": {"warn_level": 880, "crit_level": 950, "max_rate_of_rise": 8}
-                }
-            ]
+        # 2. Список опорных гидропостов по всем регионам Казахстана
+        all_stations_data = [
+            # Северо-Казахстанская область (Петропавловск) — бассейн р. Есиль
+            {
+                "name": "Сергеевское водохранилище",
+                "region": "Петропавловск (СКО)",
+                "lat": 53.8824,
+                "lng": 67.4111,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 800, "crit_level": 1100, "max_rate_of_rise": 15},
+                "start_lvl": 740.0, "target_lvl": 945.0
+            },
+            {
+                "name": "Гидропост с. Покровка",
+                "region": "Петропавловск (СКО)",
+                "lat": 54.2678,
+                "lng": 68.8520,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 950, "crit_level": 1100, "max_rate_of_rise": 12},
+                "start_lvl": 820.0, "target_lvl": 980.0
+            },
+            {
+                "name": "Гидропост г. Петропавловск (Мост)",
+                "region": "Петропавловск (СКО)",
+                "lat": 54.8753,
+                "lng": 69.1389,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 940, "crit_level": 980, "max_rate_of_rise": 10},
+                "start_lvl": 790.0, "target_lvl": 962.0
+            },
+            {
+                "name": "Пос. Заречный (Зона поймы)",
+                "region": "Петропавловск (СКО)",
+                "lat": 54.9120,
+                "lng": 69.1650,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 880, "crit_level": 950, "max_rate_of_rise": 8},
+                "start_lvl": 750.0, "target_lvl": 928.0
+            },
 
-            created_stations = []
-            for s_info in stations_data:
+            # г. Астана — бассейн р. Есиль
+            {
+                "name": "Астанинское (Вячеславское) водохранилище",
+                "region": "Астана",
+                "lat": 51.2180,
+                "lng": 71.9560,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 700, "crit_level": 850, "max_rate_of_rise": 10},
+                "start_lvl": 610.0, "target_lvl": 685.0
+            },
+            {
+                "name": "Гидропост р. Есиль (г. Астана, Мост М-1)",
+                "region": "Астана",
+                "lat": 51.1605,
+                "lng": 71.4280,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 450, "crit_level": 550, "max_rate_of_rise": 8},
+                "start_lvl": 320.0, "target_lvl": 395.0
+            },
+            {
+                "name": "Защитная дамба г. Астана (оз. Майбалык)",
+                "region": "Астана",
+                "lat": 51.0420,
+                "lng": 71.4670,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 380, "crit_level": 480, "max_rate_of_rise": 6},
+                "start_lvl": 260.0, "target_lvl": 310.0
+            },
+
+            # Западно-Казахстанская область (Уральск) — бассейн р. Жайык (Урал)
+            {
+                "name": "Гидропост г. Уральск (р. Жайык)",
+                "region": "Уральск (ЗКО)",
+                "lat": 51.2150,
+                "lng": 51.3720,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 700, "crit_level": 850, "max_rate_of_rise": 12},
+                "start_lvl": 640.0, "target_lvl": 785.0
+            },
+            {
+                "name": "Гидропост р. Деркул (с. Белес)",
+                "region": "Уральск (ЗКО)",
+                "lat": 51.3120,
+                "lng": 51.1540,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 600, "crit_level": 720, "max_rate_of_rise": 10},
+                "start_lvl": 450.0, "target_lvl": 570.0
+            },
+
+            # Атырауская область (Атырау) — низовья р. Жайык
+            {
+                "name": "Гидропост г. Атырау (р. Жайык)",
+                "region": "Атырау",
+                "lat": 47.1160,
+                "lng": 51.8830,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 500, "crit_level": 600, "max_rate_of_rise": 8},
+                "start_lvl": 410.0, "target_lvl": 490.0
+            },
+
+            # Костанайская область (Костанай) — бассейн р. Тобол
+            {
+                "name": "Каратомарское водохранилище",
+                "region": "Костанай",
+                "lat": 52.9830,
+                "lng": 63.1170,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 800, "crit_level": 950, "max_rate_of_rise": 12},
+                "start_lvl": 690.0, "target_lvl": 830.0
+            },
+            {
+                "name": "Гидропост г. Костанай (Большой мост)",
+                "region": "Костанай",
+                "lat": 53.2140,
+                "lng": 63.6320,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 600, "crit_level": 750, "max_rate_of_rise": 10},
+                "start_lvl": 480.0, "target_lvl": 615.0
+            },
+
+            # Актюбинская область (Актобе) — бассейн р. Илек
+            {
+                "name": "Актюбинское водохранилище (р. Илек)",
+                "region": "Актобе",
+                "lat": 50.2170,
+                "lng": 57.2670,
+                "hazard_type": "flood",
+                "status": "active",
+                "thresholds": {"warn_level": 550, "crit_level": 680, "max_rate_of_rise": 10},
+                "start_lvl": 420.0, "target_lvl": 510.0
+            }
+        ]
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        for s_info in all_stations_data:
+            existing = db.query(Station).filter(Station.name == s_info["name"]).first()
+            if not existing:
                 station = Station(
                     name=s_info["name"],
                     region=s_info["region"],
@@ -92,94 +197,35 @@ def seed_database():
                     thresholds=s_info["thresholds"]
                 )
                 db.add(station)
-                created_stations.append(station)
+                db.flush()
 
-            db.commit()
-            print("✓ 4 гидропоста р. Есиль успешно созданы")
-
-            # 3. Заполняем историческую телеметрию за 48 часов
-            now = datetime.datetime.utcnow()
-            for station in created_stations:
-                thresholds = station.thresholds
-                warn_lvl = thresholds["warn_level"]
-                crit_lvl = thresholds["crit_level"]
-
-                # Разная кривая подъема для станций
-                if "Сергеевское" in station.name:
-                    start_lvl = 710.0
-                    target_lvl = 935.0  # выше гребня/warn
-                elif "Покровка" in station.name:
-                    start_lvl = 810.0
-                    target_lvl = 980.0  # вошло в зону warn
-                elif "Петропавловск (Мост)" in station.name:
-                    start_lvl = 790.0
-                    target_lvl = 952.0  # превысило warn 940 см
-                else:  # Заречный
-                    start_lvl = 740.0
-                    target_lvl = 918.0  # превысило warn 880 см
-
+                # Историческая телеметрия 48 часов
+                start_lvl = s_info["start_lvl"]
+                target_lvl = s_info["target_lvl"]
                 total_hours = 48
-                step_rise = (target_lvl - start_lvl) / total_hours
+                step = (target_lvl - start_lvl) / total_hours
+                curr = start_lvl
 
-                running_lvl = start_lvl
                 telemetries = []
                 for h in range(total_hours, -1, -1):
                     point_time = now - datetime.timedelta(hours=h)
-                    noise = random.uniform(-0.6, 0.9)
-                    running_lvl += step_rise + noise
-                    current_rate = round(step_rise + noise * 0.5, 1)
-
-                    rainfall = round(max(0.0, random.uniform(0.0, 4.5) if h < 24 else random.uniform(0.0, 1.2)), 1)
-                    temp = round(7.0 + (total_hours - h) * 0.15 + random.uniform(-1, 2), 1)
-                    soil = round(min(94.0, 58.0 + (total_hours - h) * 0.6), 1)
-
-                    telemetry_point = Telemetry(
+                    noise = random.uniform(-0.4, 0.6)
+                    curr += step + noise
+                    t_point = Telemetry(
                         station_id=station.id,
                         timestamp=point_time,
-                        water_level=round(running_lvl, 1),
-                        rate_of_rise=max(0.1, current_rate),
-                        rainfall=rainfall,
-                        temperature=temp,
-                        soil_moisture=soil,
+                        water_level=round(curr, 1),
+                        rate_of_rise=round(max(0.1, step + noise * 0.4), 1),
+                        rainfall=round(max(0.0, random.uniform(0.0, 2.5)), 1),
+                        temperature=round(11.0 + random.uniform(-2, 3), 1),
+                        soil_moisture=round(min(90.0, 55.0 + random.uniform(0, 20)), 1),
                         is_valid=True
                     )
-                    telemetries.append(telemetry_point)
-
+                    telemetries.append(t_point)
                 db.add_all(telemetries)
-                db.flush()
 
-                # 4. Генерируем прогноз и начальные алерты для текущего состояния
-                latest_tel = telemetries[-1]
-                window = [
-                    {
-                        "timestamp": t.timestamp.isoformat(),
-                        "water_level": t.water_level,
-                        "rate_of_rise": t.rate_of_rise,
-                        "rainfall": t.rainfall,
-                        "temperature": t.temperature,
-                        "soil_moisture": t.soil_moisture,
-                    }
-                    for t in telemetries[-5:]
-                ]
-                pred = predict_flood(window, thresholds)
-
-                if pred["risk_level"] in ("medium", "high"):
-                    initial_alert = Alert(
-                        station_id=station.id,
-                        created_at=now,
-                        hazard_type=station.hazard_type,
-                        risk_level=pred["risk_level"],
-                        risk_score=pred["risk_score"],
-                        explanation=pred["explanation"],
-                        forecast_1h=pred["forecast_1h"],
-                        forecast_2h=pred["forecast_2h"],
-                        forecast_3h=pred["forecast_3h"],
-                        status="new"
-                    )
-                    db.add(initial_alert)
-
-            db.commit()
-            print("✓ Историческая телеметрия за 48 часов и оперативные алерты сгенерированы")
+        db.commit()
+        print("✓ База данных Saqta.kz успешно наполнена станциями всех ключевых регионов Казахстана.")
 
     except Exception as e:
         db.rollback()
