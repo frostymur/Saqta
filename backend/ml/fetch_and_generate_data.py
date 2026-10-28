@@ -274,13 +274,33 @@ def _base_level(h: int, anchors: list[tuple[int, float]]) -> float:
 # ---------------------------------------------------------------------------
 # Сборка датасета
 # ---------------------------------------------------------------------------
-def build_dataset(weather: dict | None, seed: int = 2024) -> list[dict]:
-    """Почасовой ряд 01.02.2023 … 31.05.2024 в строгой хронологии."""
+def build_dataset(weather: dict | None, catchment: dict | None = None,
+                  seed: int = 2024) -> list[dict]:
+    """Почасовой ряд 01.02.2023 … 31.05.2024 в строгой хронологии.
+
+    `catchment` — средние по бассейну (weather_client.get_catchment_weather):
+    добавляет признаки rainfall_catchment (мм/ч) и snow_water_equivalent (мм в.экв.).
+    Выравнивание по ISO-меткам времени, пропуски → 0.
+    """
     n_hours = (END - START).days * 24 + 1  # 5785
 
     w = weather if weather and len(weather["time"]) >= n_hours else \
         fallback_weather(n_hours, seed=seed, start=START)
     anchors = _base_anchors()
+
+    # выравнивание данных бассейна по времени (архив: "…T00:00", датасет: "…T00:00:00")
+    c_rain = [0.0] * n_hours
+    c_swe = [0.0] * n_hours
+    if catchment and catchment.get("time"):
+        # канонический ключ: "YYYY-MM-DDTHH:00:00" (архив даёт "…THH:00" без секунд)
+        norm = lambda t: (t + ":00") if len(t) == 16 else (t[:16] + ":00")
+        tmap = {norm(t): i for i, t in enumerate(catchment["time"])}
+        for i in range(n_hours):
+            key = (START + timedelta(hours=i)).strftime("%Y-%m-%dT%H:00:00")
+            j = tmap.get(key)
+            if j is not None:
+                c_rain[i] = float(catchment["precipitation"][j] or 0.0)
+                c_swe[i] = float(catchment["snowfall_water_equivalent"][j] or 0.0)
 
     sim = HydroSimulator(seed=seed)
     alpha = 0.35   # вес физической (быстрой) компоненты
@@ -319,6 +339,8 @@ def build_dataset(weather: dict | None, seed: int = 2024) -> list[dict]:
             "temperature": round(temp, 1),
             "soil_moisture": round(soil, 1),
             "dist_to_crit_ratio": round(level / CRIT_LEVEL, 4),
+            "rainfall_catchment": round(c_rain[i], 2),
+            "snow_water_equivalent": round(c_swe[i], 1),
         })
         levels.append(level)
 
@@ -342,11 +364,25 @@ def main() -> None:
                               "Казгидромет, бюллетень апрель–май 2024 (OCR)"])
 
     weather = fetch_real_weather(START, END)
-    rows = build_dataset(weather)
+
+    catchment = None
+    if weather:  # только если реальный архив доступен (fallback не имеет SWE)
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import weather_client as wc
+            catchment = wc.get_catchment_weather(START.isoformat(), END.isoformat(), timeout=60.0)
+            if catchment:
+                print(f"[weather] бассейн: {len(catchment['time'])} ч "
+                      f"(rain catchment + SWE)")
+        except Exception as e:  # noqa: BLE001
+            print(f"[weather] catchment недоступен: {e!r} — без признаков бассейна")
+
+    rows = build_dataset(weather, catchment)
 
     with open(OUT_CSV, "w", newline="") as f:
         cols = ["datetime", "water_level", "rate_of_rise", "accel_of_rise",
                 "rainfall", "temperature", "soil_moisture", "dist_to_crit_ratio",
+                "rainfall_catchment", "snow_water_equivalent",
                 "target_1h", "target_2h", "target_3h"]
         wtr = csv.DictWriter(f, fieldnames=cols)
         wtr.writeheader()

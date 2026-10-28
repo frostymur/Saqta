@@ -7,22 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        gov: {
-          bg: "#F1F5F9",
-          card: "#FFFFFF",
-          header: "#0F2942",
-          headerDark: "#0A1D30",
-          blue: "#1E3A8A",
-          primary: "#0284C7",
-          accent: "#2563EB",
-          gold: "#F59E0B",
-          text: "#0F172A",
-          muted: "#475569",
-          border: "#E2E8F0"
+        spruce: {
+          950: "#022c22",
+          900: "#064e3b",
+          800: "#065f46",
+          700: "#047857",
+          600: "#059669",
+          500: "#10b981",
+          100: "#d1fae5",
+          50: "#ecfdf5"
+        },
+        river: {
+          800: "#075985",
+          700: "#0369a1",
+          600: "#0284c7",
+          500: "#0ea5e9",
+          100: "#e0f2fe",
+          50: "#f0f9ff"
         }
       },
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["Onest", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"]
       }
     },

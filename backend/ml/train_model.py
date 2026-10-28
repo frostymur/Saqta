@@ -31,6 +31,13 @@ ML_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASET = os.path.join(ML_DIR, "data", "kazakhstan_flood_dataset.csv")
 ARTIFACT = os.path.join(ML_DIR, "flood_model.joblib")
 
+# Признаки модели — строго то, что доступно в момент инференса из
+# telemetry_window (контракт predict_flood_risk) + dist_to_crit_ratio,
+# вычисляемый от уровня ЧС станции. Признаки бассейна (rainfall_catchment,
+# snow_water_equivalent) есть в датасете, но МОДЕЛЬЮ НЕ ИСПОЛЬЗУЮТСЯ:
+# на горизонте 1–3 ч сток из верхнего бассейна не успевает дойти до станции
+# (измеренный прирост MAE ~0, см. отчёт), а значение на входе неизвестно —
+# подстановка 0 вызвала бы сдвиг распределения.
 FEATURES = ["water_level", "rate_of_rise", "accel_of_rise", "rainfall",
             "temperature", "soil_moisture", "dist_to_crit_ratio"]
 TARGETS = ["target_1h", "target_2h", "target_3h"]
@@ -80,8 +87,23 @@ def main() -> None:
     df = load_dataset()
     print(f"[train] датасет: {len(df)} строк, {df['datetime'].min()} … {df['datetime'].max()}")
 
-    X = df[FEATURES].to_numpy(dtype=float)
+    # При офлайн-генерации признаки бассейна могут отсутствовать — обучаем
+    # на том, что есть (ядро модели не меняется).
+    feats = [f for f in FEATURES if f in df.columns]
+    missing = [f for f in FEATURES if f not in df.columns]
+    if missing:
+        print(f"[train] без признаков (нет данных бассейна): {missing}")
+
+    X = df[feats].to_numpy(dtype=float)
     y = df[TARGETS].to_numpy(dtype=float)
+
+    # Целевая функция: ОШИБОКА базисного «импульсного» прогноза
+    #   baseline_h(t) = water_level(t) + rate_of_rise(t)·h
+    # Быстрая медленная река почти линейна на 1–3 ч, поэтому остаток
+    # мал, стационарен и предсказуем по погоде (чистый уровень модель
+    # воспроизводила с MAE ~55 см на спаде, остаток — ~2 см).
+    lvl, rate = df["water_level"].to_numpy(dtype=float), df["rate_of_rise"].to_numpy(dtype=float)
+    y_res = y - np.stack([lvl + rate * h for h in (1, 2, 3)], axis=1)
 
     # Хронологическое разбиение по кат-оффу (без shuffle): train = история,
     # test = последние данные после кат-оффа.
@@ -89,10 +111,11 @@ def main() -> None:
     train_idx = df.index[~is_test].to_numpy()
     test_idx = df.index[is_test].to_numpy()
     X_tr, X_te = X[train_idx], X[test_idx]
-    y_tr, y_te = y[train_idx], y[test_idx]
+    y_tr, y_te = y_res[train_idx], y_res[test_idx]
     print(f"[train] train={len(train_idx)} ({df['datetime'].iloc[train_idx[0]]} … "
           f"{df['datetime'].iloc[train_idx[-1]]})  test={len(test_idx)} "
           f"({df['datetime'].iloc[test_idx[0]]} … {df['datetime'].iloc[test_idx[-1]]})")
+    print("[train] целевая: остатки от baseline level+rate·h (1–3 ч)")
 
     scaler = StandardScaler()
     X_tr = scaler.fit_transform(X_tr)
@@ -101,12 +124,15 @@ def main() -> None:
     model = make_model()
     model.fit(X_tr, y_tr)
 
-    y_pred = model.predict(X_te)
+    # Восстановление абсолютного прогноза уровня: baseline + residual
+    base_te = np.stack([lvl[test_idx] + rate[test_idx] * h for h in (1, 2, 3)], axis=1)
+    y_pred = base_te + model.predict(X_te)
+    y_abs_te = y[test_idx]  # абсолютные целевые уровни (не остатки)
     metrics = {"per_horizon": {}, "mae": 0.0, "rmse": 0.0, "r2": 0.0}
     for j, t in enumerate(TARGETS):
-        mae = mean_absolute_error(y_te[:, j], y_pred[:, j])
-        rmse = float(np.sqrt(mean_squared_error(y_te[:, j], y_pred[:, j])))
-        r2 = r2_score(y_te[:, j], y_pred[:, j])
+        mae = mean_absolute_error(y_abs_te[:, j], y_pred[:, j])
+        rmse = float(np.sqrt(mean_squared_error(y_abs_te[:, j], y_pred[:, j])))
+        r2 = r2_score(y_abs_te[:, j], y_pred[:, j])
         metrics["per_horizon"][t] = {"mae": round(mae, 3), "rmse": round(rmse, 3), "r2": round(float(r2), 4)}
         print(f"[metrics] {t}: MAE={mae:.3f} см  RMSE={rmse:.3f} см  R2={r2:.4f}")
 
@@ -119,10 +145,12 @@ def main() -> None:
     bundle = {
         "model": model,
         "scaler": scaler,
-        "features": FEATURES,
+        "features": feats,
         "targets": TARGETS,
         "metrics": metrics,
         "model_type": MODEL_TYPE,
+        "residual": True,
+        "horizons": [1, 2, 3],
         "thresholds": DEFAULT_THRESHOLDS,
         "station_crit_level": STATION_CRIT_LEVEL,
         "dataset_rows": int(len(df)),

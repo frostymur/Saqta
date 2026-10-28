@@ -259,7 +259,21 @@ def predict_flood_risk(telemetry_window: list[dict], thresholds: dict) -> dict:
     obs = _last_obs(telemetry_window)
     x = _feature_vector(obs, crit_feature)
     preds = model.predict(scaler.transform(x))[0]
-    forecasts = {"1h": float(preds[0]), "2h": float(preds[1]), "3h": float(preds[2])}
+
+    # Модель предсказывает ОСТАТОК от импульсного базиса
+    #   baseline_h = water_level + rate_of_rise·h
+    # (см. train_model.py: целевая = target_h − baseline_h).
+    # Абсолютный прогноз уровня восстанавливается суммированием.
+    # Для legacy-бандла (без ключа "residual") preds уже абсолютные.
+    hz = bundle.get("horizons", [1, 2, 3])
+    level0, rate0 = obs["water_level"], obs["rate_of_rise"]
+    if bundle.get("residual", False):
+        forecasts = {
+            f"{h}h": float(level0 + rate0 * h + preds[i])
+            for i, h in enumerate(hz)
+        }
+    else:
+        forecasts = {f"{hz[i]}h": float(preds[i]) for i in range(len(hz))}
 
     risk_score = _compute_risk(obs["water_level"], forecasts,
                                obs["rate_of_rise"], warn, crit, max_rate)

@@ -1,91 +1,54 @@
 import React, { useState } from "react";
-import GovHeader from "./components/GovHeader";
-import LandingHero from "./components/LandingHero";
-import LandingProblem from "./components/LandingProblem";
-import LandingHowItWorks from "./components/LandingHowItWorks";
-import LandingStations from "./components/LandingStations";
-import LandingBenefits from "./components/LandingBenefits";
-import LandingEmergency from "./components/LandingEmergency";
-import LandingFaq from "./components/LandingFaq";
-import GovFooter from "./components/GovFooter";
-import GovAuthModal from "./components/GovAuthModal";
+import CivicHeader from "./components/CivicHeader";
+import HeroStatus from "./components/HeroStatus";
+import DistrictCheck from "./components/DistrictCheck";
+import RiverGauges from "./components/RiverGauges";
+import ActionChecklist from "./components/ActionChecklist";
+import SheltersList from "./components/SheltersList";
+import EmergencyHelp from "./components/EmergencyHelp";
+import CivicFooter from "./components/CivicFooter";
+import StaffModal from "./components/StaffModal";
 
 export default function App() {
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-
-  // User state for header representation
-  const [currentUser, setCurrentUser] = useState({
-    id: 3,
-    email: "guest@saqta.kz",
-    role: "guest",
-    full_name: "Гражданский режим"
-  });
-
-  const handleSelectRole = (role) => {
-    if (role === "admin") {
-      setCurrentUser({
-        id: 1,
-        email: "admin@saqta.kz",
-        role: "admin",
-        full_name: "Касымов А. М. (Главный аналитик ДЧС)"
-      });
-    } else if (role === "operator") {
-      setCurrentUser({
-        id: 2,
-        email: "operator@saqta.kz",
-        role: "operator",
-        full_name: "Сериков Н. Б. (Дежурный оператор ДЧС)"
-      });
-    } else {
-      setCurrentUser({
-        id: 3,
-        email: "guest@saqta.kz",
-        role: "guest",
-        full_name: "Гражданский режим"
-      });
-    }
-  };
+  const [isStaffOpen, setIsStaffOpen] = useState(false);
+  const [staffUser, setStaffUser] = useState(null);
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] text-[#0F172A] flex flex-col font-sans selection:bg-sky-200">
-      {/* 1. Official State Header */}
-      <GovHeader
-        currentUser={currentUser}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onSelectRole={handleSelectRole}
-      />
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
+      {/* 1. Civic Header */}
+      <CivicHeader onOpenStaff={() => setIsStaffOpen(true)} />
 
       <main className="flex-1 w-full">
-        {/* 2. Hero Section */}
-        <LandingHero onOpenAuth={() => setIsAuthOpen(true)} />
+        {/* 2. City Status Board (Memorable Hero Element) */}
+        <HeroStatus />
 
-        {/* 3. The Challenge / Problem on River Esil */}
-        <LandingProblem />
+        {/* 3. "What is happening in my district?" Interactive Checker */}
+        <DistrictCheck />
 
-        {/* 4. How Platform Works (Architecture & Pipeline) */}
-        <LandingHowItWorks />
+        {/* 4. River Esil Water Gauges (Where is water coming from) */}
+        <RiverGauges />
 
-        {/* 5. Hydro-monitoring Stations & Official MChS Risk Standards */}
-        <LandingStations />
+        {/* 5. 3-Step Resident Action Checklist (Without panic) */}
+        <ActionChecklist />
 
-        {/* 6. Benefits for Government, DChS, Citizens */}
-        <LandingBenefits />
+        {/* 6. Official Evacuation Shelters (PVR) in Petropavlovsk */}
+        <SheltersList />
 
-        {/* 7. Emergency 112 Hotline & Citizen Action Center */}
-        <LandingEmergency />
-
-        {/* 8. Frequently Asked Questions (FAQ) */}
-        <LandingFaq />
+        {/* 7. Emergency 112 Hotline & Resident Rescue Alert Form */}
+        <EmergencyHelp />
       </main>
 
-      {/* 9. Official GovTech Kazakhstan Footer */}
-      <GovFooter />
+      {/* 8. Official Civic Footer */}
+      <CivicFooter onOpenStaff={() => setIsStaffOpen(true)} />
 
-      {/* 10. Authentication Dialog (eGov QR / NCALayer / Demo) */}
-      <GovAuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(user) => setCurrentUser(user)}
+      {/* 9. Staff Access Modal */}
+      <StaffModal
+        isOpen={isStaffOpen}
+        onClose={() => setIsStaffOpen(false)}
+        onLoginSuccess={(user) => {
+          setStaffUser(user);
+          alert(`Вход выполнен успешно: ${user.full_name} (${user.role})`);
+        }}
       />
     </div>
   );
