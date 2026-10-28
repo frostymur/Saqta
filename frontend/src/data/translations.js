@@ -5,7 +5,9 @@ export const TRANSLATIONS = {
       hardware: "Аппараттық кешен",
       alerts: "Ескертулер",
       about: "Жүйе туралы",
-      adminLogin: "Қызметтік кіру",
+      adminLogin: "Кіру",
+      login: "Кіру",
+      logout: "Шығу",
       openLiveMap: "Тікелей карта",
     },
     hero: {
@@ -115,7 +117,9 @@ export const TRANSLATIONS = {
       hardware: "Оборудование",
       alerts: "Оповещения",
       about: "О системе",
-      adminLogin: "Служебный вход",
+      adminLogin: "Войти",
+      login: "Войти",
+      logout: "Выйти",
       openLiveMap: "Живая карта",
     },
     hero: {
@@ -225,7 +229,9 @@ export const TRANSLATIONS = {
       hardware: "Hardware",
       alerts: "Alerts",
       about: "About",
-      adminLogin: "Admin Login",
+      adminLogin: "Log in",
+      login: "Log in",
+      logout: "Log out",
       openLiveMap: "Open Live Map",
     },
     hero: {

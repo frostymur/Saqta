@@ -16,7 +16,7 @@ import {
   Waves,
   X,
 } from "lucide-react";
-import StaffModal from "./components/StaffModal";
+import LoginModal from "./components/LoginModal";
 import { TRANSLATIONS } from "./data/translations";
 
 /* =========================================================
@@ -58,7 +58,7 @@ function SaqtaLogo() {
    HEADER
 --------------------------------------------------------- */
 
-function Header({ currentLang, onSelectLang, onAdminClick }) {
+function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
 
@@ -68,6 +68,17 @@ function Header({ currentLang, onSelectLang, onAdminClick }) {
     { label: t.nav.alerts, href: "#alerts" },
     { label: t.nav.about, href: "#about" },
   ];
+
+  const getRoleLabel = () => {
+    if (!currentUser) return "";
+    if (currentUser.role === "operator") {
+      return currentLang === "kk" ? "🚨 ТЖД операторы" : currentLang === "en" ? "🚨 DChS Operator" : "🚨 Оператор ДЧС";
+    }
+    if (currentUser.role === "admin") {
+      return currentLang === "kk" ? "⚙️ Әкімші" : currentLang === "en" ? "⚙️ Admin" : "⚙️ Администратор";
+    }
+    return currentLang === "kk" ? "👤 Тұрғын" : currentLang === "en" ? "👤 Citizen" : "👤 Гражданин";
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/90 backdrop-blur-xl">
@@ -89,7 +100,7 @@ function Header({ currentLang, onSelectLang, onAdminClick }) {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-4 lg:gap-6 md:flex">
+        <div className="hidden items-center gap-4 lg:gap-5 md:flex">
           {/* Language Switcher */}
           <div className="flex items-center rounded-full border border-slate-200/90 bg-slate-50/90 p-0.5 text-[11px] font-semibold text-slate-600">
             <button
@@ -127,13 +138,35 @@ function Header({ currentLang, onSelectLang, onAdminClick }) {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onAdminClick}
-            className="text-[12px] font-medium text-slate-500 transition-colors hover:text-slate-900"
-          >
-            {t.nav.adminLogin}
-          </button>
+          {currentUser ? (
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${
+                  currentUser.role === "operator" || currentUser.role === "admin"
+                    ? "bg-sky-50 text-sky-800 border border-sky-200"
+                    : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                }`}
+              >
+                <span>{getRoleLabel()}</span>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="text-[11px] font-medium text-slate-400 hover:text-red-600 transition-colors px-1 py-1"
+                title={t.nav.logout}
+              >
+                {t.nav.logout}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="text-[12px] font-semibold text-slate-700 hover:text-emerald-700 transition-colors px-2 py-1"
+            >
+              {t.nav.login}
+            </button>
+          )}
 
           <a
             href="#live-map"
@@ -198,16 +231,35 @@ function Header({ currentLang, onSelectLang, onAdminClick }) {
           </nav>
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onAdminClick();
-              }}
-              className="px-3 py-2 text-left text-sm font-medium text-slate-600"
-            >
-              {t.nav.adminLogin}
-            </button>
+            {currentUser ? (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div>
+                  <div className="text-xs font-bold text-slate-900">{getRoleLabel()}</div>
+                  <div className="text-[10px] text-slate-400 font-mono">{currentUser.email}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="text-xs text-red-600 font-semibold px-2 py-1"
+                >
+                  {t.nav.logout}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onLoginClick();
+                }}
+                className="px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:text-emerald-700"
+              >
+                {t.nav.login}
+              </button>
+            )}
 
             <a
               href="#live-map"
@@ -1270,21 +1322,79 @@ export default function App() {
   const [currentLang, setCurrentLang] = useState(() => {
     return localStorage.getItem("saqta_lang") || "kk";
   });
-  const [isStaffOpen, setIsStaffOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("saqta_user");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginToast, setLoginToast] = useState(null);
 
   const handleSelectLang = (lang) => {
     setCurrentLang(lang);
     localStorage.setItem("saqta_lang", lang);
   };
 
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem("saqta_user", JSON.stringify(user));
+    } catch (e) {
+      console.warn("Storage error", e);
+    }
+
+    const roleMsg =
+      user.role === "operator"
+        ? currentLang === "kk"
+          ? "ТЖД кезекші операторы ретінде кіру сәтті орындалды"
+          : currentLang === "en"
+          ? "Signed in as DChS Duty Operator"
+          : "Вы вошли в систему как Оператор ДЧС СКО"
+        : currentLang === "kk"
+        ? "Тұрғын ретінде кіру сәтті орындалды"
+        : currentLang === "en"
+        ? "Signed in as Resident Citizen"
+        : "Вы вошли в систему как Гражданин";
+
+    setLoginToast(roleMsg);
+    setTimeout(() => setLoginToast(null), 4000);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("saqta_user");
+    localStorage.removeItem("saqta_token");
+    setLoginToast(
+      currentLang === "kk"
+        ? "Жүйеден шығу орындалды"
+        : currentLang === "en"
+        ? "Logged out"
+        : "Вы вышли из учетной записи"
+    );
+    setTimeout(() => setLoginToast(null), 3000);
+  };
+
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white font-sans text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-900">
+      {/* Toast Notification */}
+      {loginToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900 text-white text-xs font-semibold shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span>{loginToast}</span>
+        </div>
+      )}
+
       <Header
         currentLang={currentLang}
         onSelectLang={handleSelectLang}
-        onAdminClick={() => setIsStaffOpen(true)}
+        onLoginClick={() => setIsLoginOpen(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       <HeroSection t={t} />
@@ -1293,13 +1403,12 @@ export default function App() {
 
       <Footer t={t} />
 
-      {/* Admin / Staff Login Modal */}
-      <StaffModal
-        isOpen={isStaffOpen}
-        onClose={() => setIsStaffOpen(false)}
-        onLoginSuccess={(user) => {
-          alert(`Logged in as: ${user.full_name} (${user.role})`);
-        }}
+      {/* Login Modal with Citizen and Operator quick switch */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        currentLang={currentLang}
       />
     </main>
   );
