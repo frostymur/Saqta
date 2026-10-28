@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import Navbar from "./components/Navbar";
-import StatsOverview from "./components/StatsOverview";
-import MapView from "./components/MapView";
-import HydroChart from "./components/HydroChart";
-import MlExplainability from "./components/MlExplainability";
-import AlertsTable from "./components/AlertsTable";
-import SimulationBar from "./components/SimulationBar";
-import DchsReportModal from "./components/DchsReportModal";
-import LoginModal from "./components/LoginModal";
+import GovHeader from "./components/GovHeader";
+import HeroLanding from "./components/HeroLanding";
+import LiveMapSection from "./components/LiveMapSection";
+import HydroAnalyticsSection from "./components/HydroAnalyticsSection";
+import SimulatorSection from "./components/SimulatorSection";
+import DchsBulletinSection from "./components/DchsBulletinSection";
+import MlTechnologySection from "./components/MlTechnologySection";
+import CitizenGuideSection from "./components/CitizenGuideSection";
+import GovFooter from "./components/GovFooter";
+import GovAuthModal from "./components/GovAuthModal";
 
 import {
   fetchStations,
   fetchStationTelemetry,
   fetchAlerts,
-  processAlert,
-  sendAlertTelegram,
   fetchStationPrediction,
   fetchWeather,
   fetchDchsBulletin,
@@ -33,36 +32,37 @@ export default function App() {
   const [weather, setWeather] = useState(null);
   const [bulletin, setBulletin] = useState(null);
 
-  const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
 
-  // Default demo user: Guest (Public view)
+  // Default user state: Guest / Citizen
   const [currentUser, setCurrentUser] = useState({
     id: 3,
     email: "guest@saqta.kz",
     role: "guest",
-    full_name: "Гражданский наблюдатель"
+    full_name: "Гражданский режим"
   });
 
   const wsRef = useRef(null);
 
-  // 1. Initial Data Fetch
+  // 1. Initial Load
   useEffect(() => {
-    async function init() {
+    async function loadInitialData() {
       try {
-        const [stList, altList, wth] = await Promise.all([
+        const [stList, altList, wth, blt] = await Promise.all([
           fetchStations(),
           fetchAlerts(),
-          fetchWeather().catch(() => null)
+          fetchWeather().catch(() => null),
+          fetchDchsBulletin().catch(() => null)
         ]);
 
         setStations(stList);
         setAlerts(altList);
         if (wth) setWeather(wth);
+        if (blt) setBulletin(blt);
 
-        // По умолчанию выбираем створ «Гидропост г. Петропавловск (Мост)» или первую станцию
+        // По умолчанию выбираем створ «Гидропост г. Петропавловск (Мост)» или первый гидропост
         const defaultStation = stList.find((s) => s.name.includes("Мост")) || stList[0];
         if (defaultStation) {
           setSelectedStation(defaultStation);
@@ -71,42 +71,42 @@ export default function App() {
         console.error("Initialization error:", err);
       }
     }
-    init();
+    loadInitialData();
   }, []);
 
-  // 2. Load telemetry & ML prediction whenever selectedStation changes
+  // 2. Load Telemetry & ML Prediction when selectedStation changes
   useEffect(() => {
     if (!selectedStation) return;
 
-    let isMounted = true;
+    let active = true;
     async function loadStationDetails() {
       try {
         const [tel, pred] = await Promise.all([
           fetchStationTelemetry(selectedStation.id, 48),
           fetchStationPrediction(selectedStation.id)
         ]);
-        if (isMounted) {
+        if (active) {
           setTelemetry(tel);
           setPrediction(pred);
         }
       } catch (err) {
-        console.error("Error loading station details:", err);
+        console.error("Failed to load station telemetry/prediction:", err);
       }
     }
     loadStationDetails();
 
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, [selectedStation?.id]);
 
-  // 3. WebSocket Setup for Live Updates
+  // 3. Real-time WebSocket connection
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
     let ws;
-    let reconnectTimeout;
+    let timer;
 
     function connect() {
       ws = new WebSocket(wsUrl);
@@ -117,9 +117,9 @@ export default function App() {
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          if (message.type === "telemetry_update") {
-            const data = message.data;
+          const msg = JSON.parse(event.data);
+          if (msg.type === "telemetry_update") {
+            const data = msg.data;
 
             // Обновляем список станций
             setStations((prev) =>
@@ -136,9 +136,9 @@ export default function App() {
               )
             );
 
-            // Если обновляется выбранная станция, добавляем точку в график и обновляем прогноз
-            setSelectedStation((current) => {
-              if (current && current.id === data.station_id) {
+            // Если обновляется выбранная станция, добавляем точку в график
+            setSelectedStation((curr) => {
+              if (curr && curr.id === data.station_id) {
                 setTelemetry((prevTel) => [
                   ...prevTel.slice(-47),
                   {
@@ -167,25 +167,19 @@ export default function App() {
                     : prevPred
                 );
               }
-              return current;
+              return curr;
             });
-          } else if (message.type === "new_alert") {
-            const newAlert = message.data;
-            setAlerts((prev) => [newAlert, ...prev]);
-          } else if (message.type === "alert_processed") {
-            const { alert_id, status, processed_by } = message.data;
-            setAlerts((prev) =>
-              prev.map((a) => (a.id === alert_id ? { ...a, status, processed_by } : a))
-            );
+          } else if (msg.type === "new_alert") {
+            setAlerts((prev) => [msg.data, ...prev]);
           }
         } catch (e) {
-          console.error("WS Parse error:", e);
+          console.error("WS parse error:", e);
         }
       };
 
       ws.onclose = () => {
         setWsConnected(false);
-        reconnectTimeout = setTimeout(connect, 3000);
+        timer = setTimeout(connect, 3000);
       };
 
       ws.onerror = () => {
@@ -198,56 +192,33 @@ export default function App() {
     connect();
 
     return () => {
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (timer) clearTimeout(timer);
       if (ws) ws.close();
     };
   }, []);
 
   // Handlers
-  const handleProcessAlert = async (alertId) => {
-    try {
-      const updated = await processAlert(alertId, currentUser.full_name);
-      setAlerts((prev) => prev.map((a) => (a.id === alertId ? updated : a)));
-    } catch (err) {
-      alert("Ошибка: " + err.message);
-    }
-  };
-
-  const handleSendTelegram = async (alertId) => {
-    return await sendAlertTelegram(alertId);
-  };
-
-  const handleOpenBulletin = async () => {
-    try {
-      const data = await fetchDchsBulletin();
-      setBulletin(data);
-      setIsReportOpen(true);
-    } catch (err) {
-      alert("Ошибка генерации сводки: " + err.message);
-    }
-  };
-
   const handleSelectRole = (role) => {
     if (role === "admin") {
       setCurrentUser({
         id: 1,
         email: "admin@saqta.kz",
         role: "admin",
-        full_name: "Касымов Асет Муратович (Главный аналитик ДЧС)"
+        full_name: "Касымов А. М. (Главный аналитик ДЧС)"
       });
     } else if (role === "operator") {
       setCurrentUser({
         id: 2,
         email: "operator@saqta.kz",
         role: "operator",
-        full_name: "Сериков Нурлан Бауржанович (Дежурный оператор)"
+        full_name: "Сериков Н. Б. (Дежурный оператор ДЧС)"
       });
     } else {
       setCurrentUser({
         id: 3,
         email: "guest@saqta.kz",
         role: "guest",
-        full_name: "Гражданский наблюдатель"
+        full_name: "Гражданский режим"
       });
     }
   };
@@ -271,88 +242,68 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-slate-100 flex flex-col font-sans">
-      <Navbar
+    <div className="min-h-screen bg-[#F1F5F9] text-[#0F172A] flex flex-col font-sans selection:bg-sky-200">
+      {/* 1. Official Government Header */}
+      <GovHeader
         currentUser={currentUser}
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onOpenReport={handleOpenBulletin}
-        onLogout={() => handleSelectRole("guest")}
-        weather={weather}
-        wsConnected={wsConnected}
+        onOpenAuth={() => setIsAuthOpen(true)}
         onSelectRole={handleSelectRole}
       />
 
-      <main className="flex-1 max-w-[1720px] w-full mx-auto p-4 lg:p-6 space-y-4">
-        {/* Top Key Metrics */}
-        <StatsOverview stations={stations} alerts={alerts} weather={weather} />
+      <main className="flex-1 w-full">
+        {/* 2. Hero Section with Live Metrics */}
+        <HeroLanding
+          stations={stations}
+          onOpenBulletin={() => {
+            const el = document.getElementById("bulletin-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+          weather={weather}
+        />
 
-        {/* Interactive Simulation Control Bar */}
-        <SimulationBar
+        {/* 3. Interactive Map of Esil River & Stations */}
+        <LiveMapSection
+          stations={stations}
+          selectedStation={selectedStation}
+          onSelectStation={(st) => setSelectedStation(st)}
+        />
+
+        {/* 4. Hydrograph & ML Explainability Section */}
+        <HydroAnalyticsSection
+          station={selectedStation}
+          telemetry={telemetry}
+          prediction={prediction}
+        />
+
+        {/* 5. Interactive Simulation Control Bar */}
+        <SimulatorSection
           onTriggerStep={handleTriggerStep}
           onStartSimulation={handleStartSimulation}
           onStopSimulation={handleStopSimulation}
           onSetScenario={handleSetScenario}
           isSimulating={isSimulating}
+          wsConnected={wsConnected}
         />
 
-        {/* Main Grid: Interactive Map + Hydro Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left Column: Interactive MapLibre Map (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col gap-4">
-            <MapView
-              stations={stations}
-              selectedStation={selectedStation}
-              onSelectStation={(st) => setSelectedStation(st)}
-            />
+        {/* 6. Official DChS Operational Bulletin */}
+        <DchsBulletinSection bulletin={bulletin} />
 
-            {/* Emergency Alerts Feed */}
-            <AlertsTable
-              alerts={alerts}
-              onProcessAlert={handleProcessAlert}
-              onSendTelegram={handleSendTelegram}
-              currentUser={currentUser}
-            />
-          </div>
+        {/* 7. ML Architecture & Pipeline Section */}
+        <MlTechnologySection />
 
-          {/* Right Column: Hydrograph & ML Explainability (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
-            <HydroChart
-              station={selectedStation}
-              telemetry={telemetry}
-              prediction={prediction}
-            />
-
-            <MlExplainability prediction={prediction} />
-          </div>
-        </div>
+        {/* 8. Citizen Safety Guide & 112 Dispatch Form */}
+        <CitizenGuideSection />
       </main>
 
-      {/* Official DChS Report Modal */}
-      {isReportOpen && (
-        <DchsReportModal
-          bulletin={bulletin}
-          onClose={() => setIsReportOpen(false)}
-        />
-      )}
+      {/* 9. Official GovTech Kazakhstan Footer */}
+      <GovFooter />
 
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+      {/* 10. Authentication Dialog (eGov QR / NCALayer / Demo) */}
+      <GovAuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
         onLoginSuccess={(user) => setCurrentUser(user)}
       />
-
-      {/* Footer */}
-      <footer className="mt-8 border-t border-slate-800/80 bg-[#0B1120] py-4 text-center text-xs text-slate-500">
-        <div className="max-w-[1720px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            Платформа «Saqta.kz» © 2026. Разработано для хакатона Digital Urpaq.
-          </span>
-          <span className="font-mono text-[11px] text-slate-400">
-            Фокус: р. Есиль (Петропавловск, СКО) • ML-аналитика и гидрологическое прогнозирование
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }
