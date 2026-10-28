@@ -63,11 +63,11 @@ const features = [
    BRAND LOGO
 --------------------------------------------------------- */
 
-function FloodWatchLogo() {
+function SaqtaLogo() {
   return (
     <a
       href="#home"
-      aria-label="FloodWatch home"
+      aria-label="Saqta.kz home"
       className="group flex shrink-0 items-center gap-3"
     >
       <div className="relative flex h-10 w-10 items-center justify-center">
@@ -82,7 +82,7 @@ function FloodWatchLogo() {
       </div>
 
       <span className="text-[20px] font-bold tracking-[-0.8px] text-slate-900">
-        FloodWatch
+        Saqta<span className="text-emerald-600">.kz</span>
       </span>
     </a>
   );
@@ -106,7 +106,7 @@ function Header({ onAdminClick }) {
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-5 sm:px-8 lg:px-12 xl:px-[78px]">
         {/* Logo */}
-        <FloodWatchLogo />
+        <SaqtaLogo />
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-9 md:flex">
@@ -786,7 +786,7 @@ function DashboardMockup() {
             <div className="flex items-center gap-1.5">
               <Droplet className="h-3 w-3 fill-emerald-500 text-emerald-500" />
               <span className="text-[7px] font-bold text-slate-800">
-                FloodWatch
+                Saqta.kz
               </span>
             </div>
 
@@ -1260,10 +1260,10 @@ function Footer() {
       className="border-t border-slate-100 bg-white px-5 py-7 sm:px-8 lg:px-12 xl:px-[78px]"
     >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <FloodWatchLogo />
+        <SaqtaLogo />
 
         <p className="text-[11px] text-slate-400">
-          © 2026 FloodWatch. Early Warning System.
+          © 2026 Saqta.kz — Платформа мониторинга и прогнозирования чрезвычайных ситуаций РК.
         </p>
 
         <a
