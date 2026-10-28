@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,47 +17,13 @@ import {
   X,
 } from "lucide-react";
 import StaffModal from "./components/StaffModal";
+import { TRANSLATIONS } from "./data/translations";
 
 /* =========================================================
-   FLOODWATCH LANDING PAGE
+   SAQTA.KZ LANDING PAGE
+   Multi-language: English (en), Russian (ru), Kazakh (kk)
    React + Tailwind CSS + Lucide React
 ========================================================= */
-
-const features = [
-  {
-    id: "iot",
-    title: "IoT Sensor Network",
-    subtitle: "Hardware ESP32 integration",
-    description:
-      "Real-time water level, rainfall and environmental data from a network of IoT sensors.",
-    icon: Cpu,
-    iconColor: "text-emerald-600",
-    iconBackground: "bg-emerald-50",
-    decoration: "waves",
-  },
-  {
-    id: "prediction",
-    title: "Trend Prediction",
-    subtitle: "Dynamic risk assessment based on water levels",
-    description:
-      "AI algorithms analyze historical and real-time data to predict flood risks and give early warnings.",
-    icon: BrainCircuit,
-    iconColor: "text-blue-500",
-    iconBackground: "bg-blue-50",
-    decoration: "chart",
-  },
-  {
-    id: "alerts",
-    title: "Instant Alerts",
-    subtitle: "Automated emergency warnings via Telegram",
-    description:
-      "Get immediate notifications when risk levels increase and take action before it's too late.",
-    icon: BellRing,
-    iconColor: "text-emerald-600",
-    iconBackground: "bg-emerald-50",
-    decoration: "telegram",
-  },
-];
 
 /* ---------------------------------------------------------
    BRAND LOGO
@@ -92,14 +58,15 @@ function SaqtaLogo() {
    HEADER
 --------------------------------------------------------- */
 
-function Header({ onAdminClick }) {
+function Header({ currentLang, onSelectLang, onAdminClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
 
   const navigation = [
-    { label: "Features", href: "#features" },
-    { label: "Hardware", href: "#hardware" },
-    { label: "Alerts", href: "#alerts" },
-    { label: "About", href: "#about" },
+    { label: t.nav.features, href: "#features" },
+    { label: t.nav.hardware, href: "#hardware" },
+    { label: t.nav.alerts, href: "#alerts" },
+    { label: t.nav.about, href: "#about" },
   ];
 
   return (
@@ -109,7 +76,7 @@ function Header({ onAdminClick }) {
         <SaqtaLogo />
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-9 md:flex">
+        <nav className="hidden items-center gap-8 md:flex">
           {navigation.map((item) => (
             <a
               key={item.label}
@@ -122,20 +89,57 @@ function Header({ onAdminClick }) {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-4 lg:gap-6 md:flex">
+          {/* Language Switcher */}
+          <div className="flex items-center rounded-full border border-slate-200/90 bg-slate-50/90 p-0.5 text-[11px] font-semibold text-slate-600">
+            <button
+              type="button"
+              onClick={() => onSelectLang("kk")}
+              className={`rounded-full px-2.5 py-1 transition-all ${
+                currentLang === "kk"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              ҚАЗ
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectLang("ru")}
+              className={`rounded-full px-2.5 py-1 transition-all ${
+                currentLang === "ru"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              РУС
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectLang("en")}
+              className={`rounded-full px-2.5 py-1 transition-all ${
+                currentLang === "en"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              ENG
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={onAdminClick}
             className="text-[12px] font-medium text-slate-500 transition-colors hover:text-slate-900"
           >
-            Admin Login
+            {t.nav.adminLogin}
           </button>
 
           <a
             href="#live-map"
             className="group inline-flex h-[42px] items-center justify-center gap-3 rounded-full bg-emerald-600 px-5 text-[12px] font-semibold text-white shadow-sm shadow-emerald-600/10 transition-all duration-200 hover:bg-emerald-700 hover:shadow-md"
           >
-            Open Live Map
+            {t.nav.openLiveMap}
             <ArrowRight
               className="h-4 w-4 transition-transform group-hover:translate-x-1"
               strokeWidth={2}
@@ -143,21 +147,41 @@ function Header({ onAdminClick }) {
           </a>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 md:hidden"
-        >
-          {mobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
-        </button>
+        {/* Mobile Menu & Language Toggle */}
+        <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile Language Switcher */}
+          <div className="flex items-center rounded-full border border-slate-200 bg-slate-50 p-0.5 text-[10px] font-semibold text-slate-600">
+            {["kk", "ru", "en"].map((langCode) => (
+              <button
+                key={langCode}
+                type="button"
+                onClick={() => onSelectLang(langCode)}
+                className={`rounded-full px-2 py-0.5 uppercase transition ${
+                  currentLang === langCode
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-500"
+                }`}
+              >
+                {langCode === "kk" ? "Қаз" : langCode === "ru" ? "Рус" : "Eng"}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="border-t border-slate-100 bg-white px-5 py-5 md:hidden">
           <nav className="flex flex-col gap-1">
@@ -180,9 +204,9 @@ function Header({ onAdminClick }) {
                 setMobileMenuOpen(false);
                 onAdminClick();
               }}
-              className="px-3 py-2 text-left text-sm text-slate-500"
+              className="px-3 py-2 text-left text-sm font-medium text-slate-600"
             >
-              Admin Login
+              {t.nav.adminLogin}
             </button>
 
             <a
@@ -190,7 +214,7 @@ function Header({ onAdminClick }) {
               onClick={() => setMobileMenuOpen(false)}
               className="flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-semibold text-white"
             >
-              Open Live Map
+              {t.nav.openLiveMap}
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -204,7 +228,7 @@ function Header({ onAdminClick }) {
    HERO BADGE
 --------------------------------------------------------- */
 
-function HeroBadge() {
+function HeroBadge({ t }) {
   return (
     <div className="inline-flex h-[30px] items-center gap-2 rounded-full border border-emerald-100/70 bg-emerald-50/80 px-3.5">
       <span className="relative flex h-2 w-2">
@@ -213,19 +237,19 @@ function HeroBadge() {
       </span>
 
       <span className="text-[11px] font-semibold tracking-[0.1px] text-emerald-700">
-        Real-time
+        {t.hero.badgeRealtime}
       </span>
 
       <span className="text-emerald-400">•</span>
 
       <span className="text-[11px] font-semibold text-emerald-700">
-        IoT
+        {t.hero.badgeIot}
       </span>
 
       <span className="text-emerald-400">•</span>
 
       <span className="text-[11px] font-semibold text-emerald-700">
-        AI
+        {t.hero.badgeAi}
       </span>
     </div>
   );
@@ -299,26 +323,26 @@ function HeroDecoration() {
    MAP MOCKUP: DISTRICT SAFETY CHECK
 --------------------------------------------------------- */
 
-function MiniDistrictWidget() {
+function MiniDistrictWidget({ t }) {
   const districts = [
     {
-      name: "Zarechny",
-      status: "Danger (Evacuation)",
+      name: t.mockup.districts.zarechny,
+      status: t.mockup.statusDanger,
       danger: true,
     },
     {
-      name: "Kozhzavod",
-      status: "Danger (Evacuation)",
+      name: t.mockup.districts.kozhzavod,
+      status: t.mockup.statusDanger,
       danger: true,
     },
     {
-      name: "City Center",
-      status: "Safe",
+      name: t.mockup.districts.cityCenter,
+      status: t.mockup.statusSafe,
       danger: false,
     },
     {
-      name: "20th Microdistrict",
-      status: "Safe",
+      name: t.mockup.districts.microdistrict20,
+      status: t.mockup.statusSafe,
       danger: false,
     },
   ];
@@ -327,16 +351,16 @@ function MiniDistrictWidget() {
     <div className="absolute bottom-[-18px] left-[4%] z-20 w-[190px] rounded-xl border border-slate-100 bg-white/95 p-3 shadow-xl shadow-slate-900/5 backdrop-blur-md sm:left-[5%] sm:w-[215px]">
       <div className="mb-3 flex items-center gap-2">
         <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-        <span className="text-[9px] font-bold text-slate-800">
-          District Safety Check
+        <span className="text-[9px] font-bold text-slate-800 truncate">
+          {t.mockup.districtTitle}
         </span>
         <ChevronRight className="ml-auto h-3 w-3 text-slate-400" />
       </div>
 
       <div className="mb-2 flex h-[25px] items-center gap-2 rounded-md border border-slate-100 bg-slate-50 px-2">
         <Search className="h-3 w-3 text-slate-400" />
-        <span className="text-[8px] text-slate-400">
-          Search district...
+        <span className="text-[8px] text-slate-400 truncate">
+          {t.mockup.districtSearch}
         </span>
       </div>
 
@@ -348,9 +372,7 @@ function MiniDistrictWidget() {
           >
             <span
               className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                district.danger
-                  ? "bg-red-500"
-                  : "bg-emerald-500"
+                district.danger ? "bg-red-500" : "bg-emerald-500"
               }`}
             />
 
@@ -360,9 +382,7 @@ function MiniDistrictWidget() {
 
             <span
               className={`whitespace-nowrap text-[7px] font-medium ${
-                district.danger
-                  ? "text-red-500"
-                  : "text-emerald-600"
+                district.danger ? "text-red-500" : "text-emerald-600"
               }`}
             >
               {district.status}
@@ -380,7 +400,7 @@ function MiniDistrictWidget() {
    MAP MOCKUP: MAP BACKGROUND
 --------------------------------------------------------- */
 
-function MiniMap() {
+function MiniMap({ t }) {
   return (
     <svg
       viewBox="0 0 600 420"
@@ -394,12 +414,7 @@ function MiniMap() {
           height="42"
           patternUnits="userSpaceOnUse"
         >
-          <path
-            d="M42 0H0V42"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth="1"
-          />
+          <path d="M42 0H0V42" fill="none" stroke="#ffffff" strokeWidth="1" />
         </pattern>
       </defs>
 
@@ -477,18 +492,10 @@ function MiniMap() {
       />
 
       {/* Grid */}
-      <rect
-        width="600"
-        height="420"
-        fill="url(#mini-map-grid)"
-      />
+      <rect width="600" height="420" fill="url(#mini-map-grid)" />
 
       {/* Map labels */}
-      <g
-        fontFamily="Arial, sans-serif"
-        fontSize="10"
-        fill="#64748b"
-      >
+      <g fontFamily="Arial, sans-serif" fontSize="10" fill="#64748b">
         <text x="110" y="60">Moyynkum</text>
         <text x="380" y="60">Kishkenekol</text>
         <text x="70" y="290">Bulaevo</text>
@@ -533,19 +540,19 @@ function MiniMap() {
 
       {/* Map pills */}
       <g>
-        <rect x="105" y="115" width="90" height="20" rx="10" fill="#ef4444" />
+        <rect x="105" y="115" width="105" height="20" rx="10" fill="#ef4444" />
         <text x="115" y="128" fontSize="8" fontWeight="600" fill="white">
-          Active Flood Zone
+          {t.mockup.zoneActive}
         </text>
 
-        <rect x="410" y="105" width="66" height="20" rx="10" fill="#059669" />
+        <rect x="410" y="105" width="85" height="20" rx="10" fill="#059669" />
         <text x="421" y="118" fontSize="8" fontWeight="600" fill="white">
-          Safe Zone
+          {t.mockup.zoneSafe}
         </text>
 
-        <rect x="425" y="300" width="66" height="20" rx="10" fill="#059669" />
+        <rect x="425" y="300" width="85" height="20" rx="10" fill="#059669" />
         <text x="436" y="313" fontSize="8" fontWeight="600" fill="white">
-          Safe Zone
+          {t.mockup.zoneSafe}
         </text>
       </g>
     </svg>
@@ -558,11 +565,7 @@ function MiniMap() {
 
 function MiniWaterGraph() {
   return (
-    <svg
-      viewBox="0 0 300 100"
-      className="h-full w-full"
-      fill="none"
-    >
+    <svg viewBox="0 0 300 100" className="h-full w-full" fill="none">
       {/* Grid */}
       <g stroke="#e9eef5" strokeWidth="1">
         <path d="M25 10H290" />
@@ -610,11 +613,7 @@ function MiniWaterGraph() {
       />
 
       {/* Labels */}
-      <g
-        fontFamily="Arial, sans-serif"
-        fontSize="7"
-        fill="#94a3b8"
-      >
+      <g fontFamily="Arial, sans-serif" fontSize="7" fill="#94a3b8">
         <text x="3" y="13">7.0</text>
         <text x="3" y="38">5.0</text>
         <text x="3" y="63">3.0</text>
@@ -634,7 +633,7 @@ function MiniWaterGraph() {
    DASHBOARD MOCKUP: STATION PANEL
 --------------------------------------------------------- */
 
-function MiniStationPanel() {
+function MiniStationPanel({ t }) {
   return (
     <div className="absolute right-0 top-[4%] z-10 w-[43%] rounded-xl border border-slate-200/80 bg-white/95 p-3 shadow-xl shadow-slate-900/5 backdrop-blur-md">
       {/* Station header */}
@@ -645,24 +644,24 @@ function MiniStationPanel() {
 
         <div className="min-w-0 flex-1">
           <p className="text-[8px] font-bold text-slate-800">
-            Station #PS-012
+            {t.mockup.stationTitle}
           </p>
 
           <p className="mt-0.5 truncate text-[6px] text-slate-400">
-            Ishim River • Petropavlovsk Region
+            {t.mockup.stationSub}
           </p>
         </div>
 
         <span className="rounded-full bg-red-50 px-2 py-1 text-[6px] font-semibold text-red-500">
-          High risk
+          {t.mockup.riskHigh}
         </span>
       </div>
 
       {/* Metrics */}
       <div className="mt-3 grid grid-cols-3 divide-x divide-slate-100 rounded-lg border border-slate-100 px-2 py-2">
         <div className="pr-1">
-          <p className="text-[6px] text-slate-400">
-            Current water level
+          <p className="text-[6px] text-slate-400 truncate">
+            {t.mockup.currentLevel}
           </p>
           <p className="mt-1 text-[11px] font-bold text-slate-800">
             5.42 m
@@ -673,8 +672,8 @@ function MiniStationPanel() {
         </div>
 
         <div className="px-2">
-          <p className="text-[6px] text-slate-400">
-            Critical level
+          <p className="text-[6px] text-slate-400 truncate">
+            {t.mockup.criticalLevel}
           </p>
           <p className="mt-1 text-[11px] font-bold text-slate-800">
             4.50 m
@@ -682,12 +681,12 @@ function MiniStationPanel() {
         </div>
 
         <div className="pl-2">
-          <p className="text-[6px] text-slate-400">
-            Status
+          <p className="text-[6px] text-slate-400 truncate">
+            {t.mockup.statusLabel}
           </p>
           <p className="mt-1 flex items-center gap-1 text-[6px] font-semibold text-red-500">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            Above critical
+            {t.mockup.statusAboveCrit}
           </p>
         </div>
       </div>
@@ -696,7 +695,7 @@ function MiniStationPanel() {
       <div className="mt-3">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[8px] font-bold text-slate-700">
-            Water Level Trend
+            {t.mockup.trendTitle}
           </p>
           <span className="rounded-full bg-emerald-600 px-2 py-1 text-[6px] font-semibold text-white">
             24h
@@ -717,14 +716,13 @@ function MiniStationPanel() {
 
           <div className="min-w-0 flex-1">
             <p className="text-[7px] font-bold text-red-600">
-              Public Emergency Warning
+              {t.mockup.alertTitle}
             </p>
             <p className="mt-1 text-[6px] leading-[10px] text-slate-500">
-              The water level in the Ishim River has exceeded the critical level
-              (4.5 m). There is a risk of flooding in low-lying areas.
+              {t.mockup.alertDesc}
             </p>
             <span className="mt-1 inline-flex rounded border border-red-100 bg-white px-2 py-1 text-[6px] font-semibold text-emerald-600">
-              View all alerts →
+              {t.mockup.viewAlerts}
             </span>
           </div>
         </div>
@@ -733,30 +731,30 @@ function MiniStationPanel() {
       {/* Station info */}
       <div className="mt-3 rounded-lg border border-slate-100 p-2">
         <p className="mb-2 text-[7px] font-bold text-slate-700">
-          Station Information
+          {t.mockup.stationInfo}
         </p>
 
         <div className="space-y-1.5 text-[6px] text-slate-400">
           <div className="flex justify-between gap-2">
-            <span>Location</span>
-            <span className="text-slate-500">Petropavlovsk, SKO</span>
+            <span>{t.mockup.locationLabel}</span>
+            <span className="text-slate-500">{t.mockup.locationVal}</span>
           </div>
 
           <div className="flex justify-between gap-2">
-            <span>Coordinates</span>
+            <span>{t.mockup.coordsLabel}</span>
             <span className="text-slate-500">54.8756° N, 69.1523° E</span>
           </div>
 
           <div className="flex justify-between gap-2">
-            <span>Last update</span>
+            <span>{t.mockup.updateLabel}</span>
             <span className="text-slate-500">10:42, 24 Oct 2026</span>
           </div>
 
           <div className="flex justify-between gap-2">
-            <span>Signal</span>
+            <span>{t.mockup.signalLabel}</span>
             <span className="flex items-center gap-1 text-emerald-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Online
+              {t.mockup.signalVal}
             </span>
           </div>
         </div>
@@ -769,7 +767,7 @@ function MiniStationPanel() {
    DASHBOARD MOCKUP
 --------------------------------------------------------- */
 
-function DashboardMockup() {
+function DashboardMockup({ t }) {
   return (
     <div
       id="live-map"
@@ -793,12 +791,12 @@ function DashboardMockup() {
             <div className="flex h-[18px] min-w-0 flex-1 items-center gap-1.5 rounded-md border border-slate-100 bg-slate-50 px-2">
               <Search className="h-2.5 w-2.5 text-slate-400" />
               <span className="truncate text-[6px] text-slate-400">
-                Search location, station or region...
+                {t.mockup.searchPlaceholder}
               </span>
             </div>
 
             <span className="text-[6px] font-medium text-slate-400">
-              Guest Observer
+              {t.mockup.guestObserver}
             </span>
           </div>
 
@@ -806,24 +804,24 @@ function DashboardMockup() {
           <div className="relative h-[330px] sm:h-[390px]">
             {/* Map */}
             <div className="absolute inset-0">
-              <MiniMap />
+              <MiniMap t={t} />
             </div>
 
             {/* Map controls */}
             <div className="absolute left-2 top-2 z-10 flex overflow-hidden rounded-md bg-white shadow-sm">
               <span className="bg-emerald-600 px-3 py-1.5 text-[6px] font-semibold text-white">
-                Map
+                {t.mockup.map}
               </span>
               <span className="px-3 py-1.5 text-[6px] font-medium text-slate-500">
-                Satellite
+                {t.mockup.satellite}
               </span>
             </div>
 
             {/* District widget */}
-            <MiniDistrictWidget />
+            <MiniDistrictWidget t={t} />
 
             {/* Station details */}
-            <MiniStationPanel />
+            <MiniStationPanel t={t} />
 
             {/* Map legend */}
             <div className="absolute bottom-2 right-[45%] z-10 hidden rounded-md border border-slate-100 bg-white/95 px-2 py-1.5 shadow-sm sm:block">
@@ -831,21 +829,21 @@ function DashboardMockup() {
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <span className="text-[6px] text-slate-500">
-                    Normal
+                    {t.mockup.legendNormal}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   <span className="text-[6px] text-slate-500">
-                    Elevated
+                    {t.mockup.legendElevated}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                   <span className="text-[6px] text-slate-500">
-                    High risk
+                    {t.mockup.legendRisk}
                   </span>
                 </div>
               </div>
@@ -864,7 +862,7 @@ function DashboardMockup() {
    MOBILE PHONE
 --------------------------------------------------------- */
 
-function MobileNotification() {
+function MobileNotification({ t }) {
   return (
     <div className="absolute bottom-[-40px] right-[-5px] z-30 w-[120px] rotate-[8deg] sm:bottom-[-42px] sm:right-[-30px] sm:w-[145px] lg:right-[-65px]">
       {/* Phone shadow */}
@@ -876,7 +874,7 @@ function MobileNotification() {
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-b from-[#163d4c] via-[#0c3541] to-[#06303b]">
           {/* Status bar */}
           <div className="flex items-center justify-between px-3 pt-3 text-[6px] text-white/80">
-            <span>10:42</span>
+            <span>{t.phone.time}</span>
             <div className="flex items-center gap-1">
               <span className="h-1 w-1 rounded-full bg-white/80" />
               <span className="h-1 w-2 rounded-sm bg-white/80" />
@@ -889,10 +887,10 @@ function MobileNotification() {
           {/* Clock */}
           <div className="px-3 pb-2 pt-6 text-center">
             <p className="text-[27px] font-light tracking-[-1px] text-white sm:text-[32px]">
-              10:42
+              {t.phone.time}
             </p>
             <p className="mt-0.5 text-[7px] text-white/65">
-              Thu, Oct 24
+              {t.phone.date}
             </p>
           </div>
 
@@ -901,25 +899,22 @@ function MobileNotification() {
             {/* Telegram header */}
             <div className="mb-2 flex items-center gap-1.5">
               <div className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-2.5 w-2.5 fill-white"
-                >
+                <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 fill-white">
                   <path d="M21.4 3.6L18.2 20c-.2 1.2-.9 1.5-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L5.6 13.7.8 12.2c-1-.3-1-1 .2-1.5L20 3.3c.9-.4 1.7.2 1.4.3Z" />
                 </svg>
               </div>
 
               <div className="min-w-0 flex-1">
                 <p className="text-[6px] font-semibold text-white">
-                  Telegram
+                  {t.phone.sender}
                 </p>
                 <p className="text-[5px] text-white/50">
-                  now
+                  {t.phone.statusNow}
                 </p>
               </div>
 
               <span className="text-[5px] text-white/40">
-                NOTIFICATION
+                {t.phone.tag}
               </span>
             </div>
 
@@ -930,17 +925,16 @@ function MobileNotification() {
               </div>
 
               <p className="text-[8px] font-bold leading-tight text-white">
-                High Water Risk
+                {t.phone.alertTitle}
               </p>
 
               <p className="mt-1 text-[6px] leading-[10px] text-white/85">
-                Water levels have exceeded the critical threshold. Flooding risk
-                detected in low-lying areas.
+                {t.phone.alertDesc}
               </p>
 
               <div className="mt-2 rounded-md bg-white/15 px-2 py-1.5 text-center">
                 <span className="text-[6px] font-semibold text-white">
-                  View Details
+                  {t.phone.detailsBtn}
                 </span>
               </div>
             </div>
@@ -960,36 +954,32 @@ function MobileNotification() {
    HERO SECTION
 --------------------------------------------------------- */
 
-function HeroSection() {
+function HeroSection({ t }) {
   return (
-    <section
-      id="home"
-      className="relative overflow-hidden bg-white"
-    >
+    <section id="home" className="relative overflow-hidden bg-white">
       <HeroDecoration />
 
       <div className="relative mx-auto grid max-w-[1600px] items-center gap-16 px-5 pb-24 pt-16 sm:px-8 sm:pt-20 lg:grid-cols-[0.85fr_1.15fr] lg:gap-10 lg:px-12 lg:pb-[105px] lg:pt-[65px] xl:px-[78px]">
         {/* Left: Copy */}
         <div className="relative z-10 max-w-[540px]">
-          <HeroBadge />
+          <HeroBadge t={t} />
 
           <h1 className="mt-7 text-[42px] font-bold leading-[1.12] tracking-[-2.1px] text-slate-900 sm:text-[52px] lg:text-[52px] xl:text-[58px]">
-            Predict, Prepare,
+            {t.hero.titleLine1}
             <br />
             <span className="block">
-              Protect:{" "}
+              {t.hero.titleLine2Prefix}
               <span className="text-emerald-600">
-                Smart Flood
+                {t.hero.titleLine2Accent}
               </span>
             </span>
             <span className="block text-emerald-600">
-              Monitoring
+              {t.hero.titleLine3}
             </span>
           </h1>
 
           <p className="mt-6 max-w-[440px] text-[15px] leading-[1.8] text-slate-500 sm:text-[16px]">
-            Real-time IoT water level tracking and AI-driven risk assessment to
-            keep communities safe and reduce flood damage.
+            {t.hero.subtitle}
           </p>
 
           {/* CTAs */}
@@ -998,7 +988,7 @@ function HeroSection() {
               href="#live-map"
               className="group inline-flex h-[46px] items-center justify-center gap-3 rounded-full bg-emerald-600 px-6 text-[12px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg"
             >
-              View Live Map
+              {t.hero.ctaMap}
               <ArrowRight
                 className="h-4 w-4 transition-transform group-hover:translate-x-1"
                 strokeWidth={2}
@@ -1009,7 +999,7 @@ function HeroSection() {
               href="#hardware"
               className="group inline-flex h-[46px] items-center justify-center gap-3 rounded-full border border-emerald-500 bg-white/80 px-6 text-[12px] font-semibold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50"
             >
-              Explore Tech Stack
+              {t.hero.ctaTech}
               <Code2
                 className="h-[15px] w-[15px] transition-transform group-hover:scale-110"
                 strokeWidth={2}
@@ -1038,8 +1028,8 @@ function HeroSection() {
 
         {/* Right: Dashboard composite */}
         <div className="relative z-10 min-w-0 lg:ml-[-20px]">
-          <DashboardMockup />
-          <MobileNotification />
+          <DashboardMockup t={t} />
+          <MobileNotification t={t} />
 
           {/* Small floating leaf */}
           <svg
@@ -1137,15 +1127,8 @@ function FeatureDecoration({ type }) {
         fill="none"
       />
       <g transform="translate(205 25) rotate(-15)">
-        <path
-          d="M0 30C0 10 20 0 40 0C40 20 20 35 0 30Z"
-          fill="#6ee7b7"
-        />
-        <path
-          d="M0 30L30 5"
-          stroke="#ffffff"
-          strokeWidth="1.5"
-        />
+        <path d="M0 30C0 10 20 0 40 0C40 20 20 35 0 30Z" fill="#6ee7b7" />
+        <path d="M0 30L30 5" stroke="#ffffff" strokeWidth="1.5" />
       </g>
     </svg>
   );
@@ -1155,45 +1138,50 @@ function FeatureDecoration({ type }) {
    FEATURE CARD
 --------------------------------------------------------- */
 
-function FeatureCard({ feature }) {
-  const Icon = feature.icon;
+function FeatureCard({ card }) {
+  const Icon =
+    card.id === "iot"
+      ? Cpu
+      : card.id === "prediction"
+      ? BrainCircuit
+      : BellRing;
+
+  const iconColor = card.id === "prediction" ? "text-blue-500" : "text-emerald-600";
+  const iconBg = card.id === "prediction" ? "bg-blue-50" : "bg-emerald-50";
 
   return (
     <a
-      id={feature.id === "iot" ? "hardware" : feature.id}
-      href={`#${feature.id}`}
+      id={card.id === "iot" ? "hardware" : card.id}
+      href={`#${card.id}`}
       className="group relative flex min-h-[235px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_4px_20px_-10px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_16px_35px_-15px_rgba(15,23,42,0.12)] sm:p-7"
     >
       {/* Decoration */}
-      <FeatureDecoration type={feature.decoration} />
+      <FeatureDecoration type={card.decoration} />
 
       {/* Card content */}
       <div className="relative z-10 flex items-start gap-4">
         {/* Icon */}
         <div
-          className={`flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-2xl ${feature.iconBackground} transition-transform duration-300 group-hover:scale-105`}
+          className={`flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-2xl ${iconBg} transition-transform duration-300 group-hover:scale-105`}
         >
-          <Icon
-            className={`h-[30px] w-[30px] ${feature.iconColor}`}
-            strokeWidth={1.9}
-          />
+          <Icon className={`h-[30px] w-[30px] ${iconColor}`} strokeWidth={1.9} />
         </div>
 
         {/* Title and subtitle */}
         <div className="min-w-0 flex-1 pt-1">
           <h3 className="text-[16px] font-bold tracking-[-0.35px] text-slate-800">
-            {feature.title}
+            {card.title}
           </h3>
 
           <p className="mt-1.5 text-[11px] leading-5 text-slate-500">
-            {feature.subtitle}
+            {card.subtitle}
           </p>
         </div>
       </div>
 
       {/* Description */}
       <p className="relative z-10 mt-5 max-w-[330px] text-[11px] leading-[19px] text-slate-500">
-        {feature.description}
+        {card.description}
       </p>
 
       {/* Footer arrow */}
@@ -1210,7 +1198,7 @@ function FeatureCard({ feature }) {
    FEATURES SECTION
 --------------------------------------------------------- */
 
-function FeaturesSection() {
+function FeaturesSection({ t }) {
   return (
     <section
       id="features"
@@ -1221,27 +1209,23 @@ function FeaturesSection() {
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-[1.8px] text-emerald-600">
-              Built for safer communities
+              {t.features.kicker}
             </span>
 
             <h2 className="mt-2 text-[25px] font-bold tracking-[-1px] text-slate-900 sm:text-[30px]">
-              Smarter flood protection
+              {t.features.title}
             </h2>
           </div>
 
           <p className="max-w-[380px] text-[12px] leading-6 text-slate-500">
-            Connected sensors, intelligent forecasting, and instant warnings
-            working together to protect people and property.
+            {t.features.desc}
           </p>
         </div>
 
         {/* Feature cards */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {features.map((feature) => (
-            <FeatureCard
-              key={feature.id}
-              feature={feature}
-            />
+          {t.features.cards.map((card) => (
+            <FeatureCard key={card.id} card={card} />
           ))}
         </div>
       </div>
@@ -1253,7 +1237,7 @@ function FeaturesSection() {
    FOOTER
 --------------------------------------------------------- */
 
-function Footer() {
+function Footer({ t }) {
   return (
     <footer
       id="about"
@@ -1263,14 +1247,14 @@ function Footer() {
         <SaqtaLogo />
 
         <p className="text-[11px] text-slate-400">
-          © 2026 Saqta.kz — Платформа мониторинга и прогнозирования чрезвычайных ситуаций РК.
+          {t.footer.copyright}
         </p>
 
         <a
           href="#home"
           className="inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 transition hover:text-emerald-600"
         >
-          Back to top
+          {t.footer.backToTop}
           <ArrowUpRight className="h-3.5 w-3.5" />
         </a>
       </div>
@@ -1283,17 +1267,31 @@ function Footer() {
 --------------------------------------------------------- */
 
 export default function App() {
+  const [currentLang, setCurrentLang] = useState(() => {
+    return localStorage.getItem("saqta_lang") || "kk";
+  });
   const [isStaffOpen, setIsStaffOpen] = useState(false);
+
+  const handleSelectLang = (lang) => {
+    setCurrentLang(lang);
+    localStorage.setItem("saqta_lang", lang);
+  };
+
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white font-sans text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-900">
-      <Header onAdminClick={() => setIsStaffOpen(true)} />
+      <Header
+        currentLang={currentLang}
+        onSelectLang={handleSelectLang}
+        onAdminClick={() => setIsStaffOpen(true)}
+      />
 
-      <HeroSection />
+      <HeroSection t={t} />
 
-      <FeaturesSection />
+      <FeaturesSection t={t} />
 
-      <Footer />
+      <Footer t={t} />
 
       {/* Admin / Staff Login Modal */}
       <StaffModal
