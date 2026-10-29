@@ -947,7 +947,7 @@ function DashboardMockup({ t }) {
 
 function MobileNotification({ t }) {
   return (
-    <div className="absolute bottom-[-44px] right-[-10px] z-30 w-[152px] rotate-[8deg] sm:bottom-[-48px] sm:right-[-38px] sm:w-[184px] lg:right-[-78px] lg:w-[205px]">
+    <div className="absolute bottom-[-40px] right-[-12px] z-30 w-[170px] rotate-[8deg] sm:bottom-[-48px] sm:right-[-38px] sm:w-[184px] lg:right-[-78px] lg:w-[205px]">
       {/* Phone shadow */}
       <div className="absolute inset-0 translate-y-4 scale-95 rounded-[30px] bg-slate-900/20 blur-xl" />
 
@@ -956,7 +956,7 @@ function MobileNotification({ t }) {
         {/* Screen */}
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-b from-[#163d4c] via-[#0c3541] to-[#06303b]">
           {/* Status bar */}
-          <div className="flex items-center justify-between px-3 pt-3 text-[6px] text-white/80">
+          <div className="flex items-center justify-between px-3 pt-2.5 text-[6px] text-white/80 sm:pt-3">
             <span>{t.phone.time}</span>
             <div className="flex items-center gap-1">
               <span className="h-1 w-1 rounded-full bg-white/80" />
@@ -968,19 +968,19 @@ function MobileNotification({ t }) {
           <div className="absolute left-1/2 top-[5px] h-[7px] w-[38px] -translate-x-1/2 rounded-full bg-black" />
 
           {/* Clock */}
-          <div className="px-3 pb-2 pt-6 text-center">
-            <p className="text-[27px] font-light tracking-[-1px] text-white sm:text-[32px]">
+          <div className="px-3 pb-1.5 pt-4 text-center sm:pb-2 sm:pt-6">
+            <p className="text-[24px] font-light tracking-[-1px] text-white sm:text-[32px]">
               {t.phone.time}
             </p>
-            <p className="mt-0.5 text-[7px] text-white/65">
+            <p className="mt-0.5 hidden text-[7px] text-white/65 sm:block">
               {t.phone.date}
             </p>
           </div>
 
           {/* Notification */}
-          <div className="mx-2 mb-3 overflow-hidden rounded-xl border border-white/10 bg-white/10 p-2.5 backdrop-blur-md">
+          <div className="mx-2 mb-2 overflow-hidden rounded-xl border border-white/10 bg-white/10 p-2 backdrop-blur-md sm:mb-3 sm:p-2.5">
             {/* Telegram header */}
-            <div className="mb-2 flex items-center gap-1.5">
+            <div className="mb-1.5 flex items-center gap-1.5 sm:mb-2">
               <div className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500">
                 <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 fill-white">
                   <path d="M21.4 3.6L18.2 20c-.2 1.2-.9 1.5-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L5.6 13.7.8 12.2c-1-.3-1-1 .2-1.5L20 3.3c.9-.4 1.7.2 1.4.3Z" />
@@ -1002,20 +1002,20 @@ function MobileNotification({ t }) {
             </div>
 
             {/* Alert */}
-            <div className="rounded-lg border border-red-400/20 bg-gradient-to-br from-red-500 to-red-600 p-2.5 shadow-lg shadow-red-950/20">
-              <div className="mb-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/15">
-                <BellRing className="h-3.5 w-3.5 text-white" />
+            <div className="rounded-lg border border-red-400/20 bg-gradient-to-br from-red-500 to-red-600 p-2 shadow-lg shadow-red-950/20 sm:p-2.5">
+              <div className="mb-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/15 sm:mb-2 sm:h-6 sm:w-6">
+                <BellRing className="h-3 w-3 text-white sm:h-3.5 sm:w-3.5" />
               </div>
 
               <p className="text-[8px] font-bold leading-tight text-white">
                 {t.phone.alertTitle}
               </p>
 
-              <p className="mt-1 text-[6px] leading-[10px] text-white/85">
+              <p className="mt-0.5 text-[6px] leading-[9px] text-white/85 sm:mt-1 sm:leading-[10px]">
                 {t.phone.alertDesc}
               </p>
 
-              <div className="mt-2 rounded-md bg-white/15 px-2 py-1.5 text-center">
+              <div className="mt-1.5 rounded-md bg-white/15 px-2 py-1 text-center sm:mt-2 sm:py-1.5">
                 <span className="text-[6px] font-semibold text-white">
                   {t.phone.detailsBtn}
                 </span>
@@ -1024,7 +1024,7 @@ function MobileNotification({ t }) {
           </div>
 
           {/* Bottom phone bar */}
-          <div className="flex justify-center pb-2">
+          <div className="flex justify-center pb-1.5 sm:pb-2">
             <div className="h-[3px] w-[35px] rounded-full bg-white/70" />
           </div>
         </div>
