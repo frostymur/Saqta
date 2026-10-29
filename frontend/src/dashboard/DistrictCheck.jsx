@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { ChevronRight, MapPin, Search, ShieldCheck, X } from "lucide-react";
-import { haversineKm, stationRisk } from "./lib/format";
+import { haversineKm, normalizeHealth, stationRisk } from "./lib/format";
 
-const RISK_RANK = { low: 0, medium: 1, high: 2 };
 const RISK_RADIUS_KM = 15;
 
 function districtState(district, stations) {
@@ -23,21 +22,26 @@ function districtState(district, stations) {
     return { status: "unknown", nearest: null };
   }
 
-  const nearby = distances.filter((item) => item.km <= RISK_RADIUS_KM);
-  const known = nearby.filter((item) => stationRisk(item.station) !== "unknown");
-
-  if (!known.length) {
+  // Use the nearest *online* station: stale values must not repaint the whole
+  // city, and one elevated station 15 km away is not "all districts".
+  const live = distances.filter(
+    (item) =>
+      item.km <= RISK_RADIUS_KM &&
+      normalizeHealth(item.station.health) === "online"
+  );
+  if (!live.length) {
     return { status: "unknown", nearest: distances[0] || null };
   }
 
-  const risk = known.reduce(
-    (max, item) => Math.max(max, RISK_RANK[stationRisk(item.station)] ?? 0),
-    0
-  );
+  const nearest = live[0];
+  const risk = stationRisk(nearest.station);
+  if (risk === "unknown") {
+    return { status: "unknown", nearest };
+  }
 
   return {
-    status: risk >= 2 ? "danger" : risk === 1 ? "warn" : "safe",
-    nearest: distances[0],
+    status: risk === "high" ? "danger" : risk === "medium" ? "warn" : "safe",
+    nearest,
   };
 }
 

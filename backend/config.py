@@ -1,4 +1,6 @@
 import os
+import socket
+
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -19,7 +21,10 @@ class Settings(BaseSettings):
     MQTT_STATUS_TOPIC: str = "floodwatch/status/#"
     MQTT_USERNAME: str = ""
     MQTT_PASSWORD: str = ""
-    MQTT_CLIENT_ID: str = "saqta-backend"
+    MQTT_CLIENT_ID: str = os.getenv(
+        "MQTT_CLIENT_ID",
+        f"saqta-backend-{socket.gethostname()[:12]}-{os.getpid()}",
+    )
 
     # Petropavlovsk coordinates
     PETROPAVLOVSK_LAT: float = 54.8753

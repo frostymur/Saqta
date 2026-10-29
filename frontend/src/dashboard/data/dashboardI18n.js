@@ -86,7 +86,7 @@ const en = {
   "district.close": "Hide districts",
   "district.status": "Status",
   "district.warn": "Elevated risk",
-  "district.basis": "Status is calculated from the nearest station",
+  "district.basis": "Status is calculated from the nearest station with fresh data",
   "district.unknown": "No data",
 
   "station.selectTitle": "Select a station",
@@ -412,7 +412,7 @@ const ru = {
   "district.close": "Скрыть районы",
   "district.status": "Статус",
   "district.warn": "Повышенный риск",
-  "district.basis": "Статус рассчитан по ближайшему гидропосту",
+  "district.basis": "Статус рассчитан по ближайшему гидропосту со свежими данными",
   "district.unknown": "Нет данных",
 
   "station.selectTitle": "Выберите гидропост",
@@ -738,7 +738,7 @@ const kk = {
   "district.close": "Аудандарды жасыру",
   "district.status": "Мәртебе",
   "district.warn": "Қауіптілік жоғары",
-  "district.basis": "Мәртебе ең жақын бекет бойынша есептелген",
+  "district.basis": "Мәртебе жаңа деректері бар ең жақын бекет бойынша есептелген",
   "district.unknown": "Дерек жоқ",
 
   "station.selectTitle": "Бекетті таңдаңыз",

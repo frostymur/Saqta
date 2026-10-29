@@ -386,7 +386,8 @@ export default function StationPanel({
               {healthBadge}
               {isOperator && prediction?.risk_level && (
                 <span className="rounded-full border border-sky-100 bg-sky-50 px-2 py-0.5 text-[9px] font-semibold text-sky-700">
-                  ML {t(riskLabelKey(normalizeRisk(prediction.risk_level)))}
+                  {String(prediction.model_type || "").startsWith("ML") ? "ML" : "RULE"}{" "}
+                  {t(riskLabelKey(normalizeRisk(prediction.risk_level)))}
                 </span>
               )}
               <span className="text-[9px] font-medium text-slate-400">#{station.id}</span>
