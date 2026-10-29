@@ -71,14 +71,17 @@ function updateDangerZones(map, stations) {
     })
     .map((station) => {
       const risk = stationRisk(station);
-      const radius = ZONE_RADIUS_KM[risk];
+      const radiusKm =
+        Number(station.alert_radius_m) > 0
+          ? Number(station.alert_radius_m) / 1000
+          : ZONE_RADIUS_KM[risk];
       const lng = Number(station.lng);
       const lat = Number(station.lat);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
       return {
         type: "Feature",
         properties: { risk, name: station.name },
-        geometry: { type: "Polygon", coordinates: [circlePolygon(lat, lng, radius)] },
+        geometry: { type: "Polygon", coordinates: [circlePolygon(lat, lng, radiusKm)] },
       };
     })
     .filter(Boolean);

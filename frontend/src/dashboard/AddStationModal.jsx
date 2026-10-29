@@ -15,7 +15,20 @@ function initialForm(region) {
     warn: 940,
     crit: 980,
     maxRate: 10,
+    water_body_type: "small_river",
+    catchment_area_km2: "",
+    response_time_h: "",
+    alert_radius_m: 500,
+    settlement: "",
+    river_name: "",
   };
+}
+
+function optionalNumber(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return undefined;
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : undefined;
 }
 
 export default function AddStationModal({ open, onClose, region, t, onCreated, onToast }) {
@@ -85,6 +98,12 @@ export default function AddStationModal({ open, onClose, region, t, onCreated, o
         lng,
         hazard_type: "flood",
         status: "active",
+        water_body_type: form.water_body_type,
+        catchment_area_km2: optionalNumber(form.catchment_area_km2),
+        response_time_h: optionalNumber(form.response_time_h),
+        alert_radius_m: optionalNumber(form.alert_radius_m) ?? 500,
+        settlement: form.settlement.trim() || undefined,
+        river_name: form.river_name.trim() || undefined,
         thresholds: {
           warn_level: warn,
           crit_level: crit,
@@ -154,6 +173,76 @@ export default function AddStationModal({ open, onClose, region, t, onCreated, o
             ))}
           </select>
         </label>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldWaterBodyType")}</span>
+            <select
+              value={form.water_body_type}
+              onChange={update("water_body_type")}
+              className={fieldClass}
+            >
+              <option value="urban">{t("station.waterBodyUrban")}</option>
+              <option value="small_river">{t("station.waterBodySmallRiver")}</option>
+              <option value="stream">{t("station.waterBodyStream")}</option>
+              <option value="reservoir">{t("station.waterBodyReservoir")}</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldAlertRadius")}</span>
+            <input
+              type="number"
+              min="100"
+              step="50"
+              value={form.alert_radius_m}
+              onChange={update("alert_radius_m")}
+              placeholder="500"
+              className={fieldClass}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldCatchment")}</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={form.catchment_area_km2}
+              onChange={update("catchment_area_km2")}
+              placeholder="0"
+              className={fieldClass}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldResponseTime")}</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={form.response_time_h}
+              onChange={update("response_time_h")}
+              placeholder="0"
+              className={fieldClass}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldSettlement")}</span>
+            <input
+              value={form.settlement}
+              onChange={update("settlement")}
+              placeholder="с. Ивановка"
+              className={fieldClass}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClass}>{t("station.fieldRiverName")}</span>
+            <input
+              value={form.river_name}
+              onChange={update("river_name")}
+              placeholder="р. Ишим / ручей"
+              className={fieldClass}
+            />
+          </label>
+        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <label className="block">

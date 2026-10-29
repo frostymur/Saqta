@@ -45,6 +45,12 @@ def _station_payload(station: Station, latest: Optional[Telemetry]) -> StationRe
         status=station.status,
         health=station_health(station, latest),
         thresholds=station.thresholds,
+        water_body_type=station.water_body_type or "urban",
+        catchment_area_km2=station.catchment_area_km2,
+        response_time_h=station.response_time_h,
+        alert_radius_m=station.alert_radius_m,
+        settlement=station.settlement,
+        river_name=station.river_name,
         current_water_level=latest.water_level if latest else None,
         current_rate_of_rise=latest.rate_of_rise if latest else None,
         current_risk_level=risk,
@@ -72,6 +78,15 @@ def _validate_thresholds(thresholds) -> None:
         )
     if thresholds.max_rate_of_rise <= 0:
         raise HTTPException(status_code=422, detail="Максимальная скорость подъёма должна быть > 0")
+
+
+def _validate_profile(payload) -> None:
+    if payload.catchment_area_km2 is not None and payload.catchment_area_km2 <= 0:
+        raise HTTPException(status_code=422, detail="Площадь водосбора должна быть > 0")
+    if payload.response_time_h is not None and not (0 < payload.response_time_h <= 72):
+        raise HTTPException(status_code=422, detail="Время добегания должно быть в диапазоне (0; 72] ч")
+    if payload.alert_radius_m is not None and not (100 <= payload.alert_radius_m <= 5000):
+        raise HTTPException(status_code=422, detail="Радиус оповещения должен быть от 100 до 5000 м")
 
 
 def _ensure_unique_code(db: Session, code: Optional[str], exclude_id: Optional[int] = None) -> None:
@@ -128,6 +143,7 @@ def create_station(
 
     _validate_location(payload.region, payload.lat, payload.lng)
     _validate_thresholds(payload.thresholds)
+    _validate_profile(payload)
     _ensure_unique_name(db, name, payload.region)
     _ensure_unique_code(db, payload.code)
 
@@ -140,6 +156,12 @@ def create_station(
         hazard_type=payload.hazard_type,
         status=payload.status,
         thresholds=payload.thresholds.model_dump(),
+        water_body_type=payload.water_body_type,
+        catchment_area_km2=payload.catchment_area_km2,
+        response_time_h=payload.response_time_h,
+        alert_radius_m=payload.alert_radius_m,
+        settlement=payload.settlement,
+        river_name=payload.river_name,
     )
     db.add(station)
     db.commit()
@@ -167,6 +189,7 @@ def update_station(
         _validate_location(region, lat, lng)
     if payload.thresholds is not None:
         _validate_thresholds(payload.thresholds)
+    _validate_profile(payload)
     if payload.name is not None or payload.region is not None:
         _ensure_unique_name(db, name, region, exclude_id=station.id)
     if payload.code is not None:
@@ -184,6 +207,18 @@ def update_station(
         station.status = payload.status
     if payload.thresholds is not None:
         station.thresholds = payload.thresholds.model_dump()
+    if payload.water_body_type is not None:
+        station.water_body_type = payload.water_body_type
+    if payload.catchment_area_km2 is not None:
+        station.catchment_area_km2 = payload.catchment_area_km2
+    if payload.response_time_h is not None:
+        station.response_time_h = payload.response_time_h
+    if payload.alert_radius_m is not None:
+        station.alert_radius_m = payload.alert_radius_m
+    if payload.settlement is not None:
+        station.settlement = payload.settlement
+    if payload.river_name is not None:
+        station.river_name = payload.river_name
 
     db.commit()
     db.refresh(station)

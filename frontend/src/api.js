@@ -161,6 +161,10 @@ export async function fetchStationPrediction(stationId) {
   return request(`/ml/predict/${stationId}`);
 }
 
+export async function fetchStationOutlook(stationId) {
+  return request(`/outlook/${stationId}`);
+}
+
 export async function fetchWeather() {
   return request("/weather/petropavlovsk");
 }

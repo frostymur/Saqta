@@ -106,6 +106,13 @@ def main() -> int:
             ok = series.status_code == 200 and len(series.json().get("points", [])) > 0
             check(f"telemetry series {range_name}", ok, str(series.status_code))
 
+        outlook = client.get(f"/api/outlook/{station_id}")
+        check(
+            "outlook 48h",
+            outlook.status_code == 200 and outlook.json().get("horizon_hours") == 48,
+            str(outlook.status_code),
+        )
+
         prediction = client.get(f"/api/ml/predict/{station_id}")
         check(
             "ml prediction",

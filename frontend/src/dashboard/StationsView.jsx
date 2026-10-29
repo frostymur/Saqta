@@ -20,6 +20,12 @@ const FILTERS = [
   { id: "low", key: "alerts.riskLow" },
 ];
 
+const WATER_BODY_BADGES = {
+  small_river: "station.badgeSmallRiver",
+  stream: "station.badgeStream",
+  reservoir: "station.badgeReservoir",
+};
+
 export default function StationsView({
   stations = [],
   selectedStation,
@@ -119,6 +125,9 @@ export default function StationsView({
             const risk = normalizeRisk(station.current_risk_level || stationRisk(station));
             const meta = riskMeta(risk);
             const selected = selectedStation && String(selectedStation.id) === String(station.id);
+            const waterBodyBadge = WATER_BODY_BADGES[station.water_body_type];
+            const place = station.settlement || station.river_name;
+            const subtitle = place ? `${station.region} · ${place}` : station.region;
             return (
               <button
                 key={station.id}
@@ -136,9 +145,16 @@ export default function StationsView({
                     <Droplets className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-bold text-slate-800">{station.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-[12px] font-bold text-slate-800">{station.name}</p>
+                      {waterBodyBadge && (
+                        <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-1.5 py-0.5 text-[8px] font-semibold text-sky-700">
+                          {t(waterBodyBadge)}
+                        </span>
+                      )}
+                    </div>
                     <p className="truncate text-[9px] text-slate-400">
-                      {station.region} · {formatRelative(station.last_updated, lang)}
+                      {subtitle} · {formatRelative(station.last_updated, lang)}
                     </p>
                   </div>
                   <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:text-emerald-600" />

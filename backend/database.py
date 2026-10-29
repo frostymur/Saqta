@@ -32,10 +32,22 @@ def ensure_schema() -> None:
     if "stations" not in inspector.get_table_names():
         return
     columns = {column["name"] for column in inspector.get_columns("stations")}
-    if "code" in columns:
+    column_defs = {
+        "code": "VARCHAR(64)",
+        "water_body_type": "VARCHAR(50) DEFAULT 'urban'",
+        "catchment_area_km2": "DOUBLE PRECISION",
+        "response_time_h": "DOUBLE PRECISION",
+        "alert_radius_m": "INTEGER",
+        "settlement": "VARCHAR(255)",
+        "river_name": "VARCHAR(255)",
+    }
+    missing = [(name, ddl) for name, ddl in column_defs.items() if name not in columns]
+    if not missing:
         return
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE stations ADD COLUMN code VARCHAR(64)"))
-        connection.execute(
-            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_stations_code ON stations (code)")
-        )
+        for name, ddl in missing:
+            connection.execute(text(f"ALTER TABLE stations ADD COLUMN {name} {ddl}"))
+        if "code" not in columns:
+            connection.execute(
+                text("CREATE UNIQUE INDEX IF NOT EXISTS ix_stations_code ON stations (code)")
+            )

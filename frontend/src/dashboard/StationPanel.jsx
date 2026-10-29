@@ -31,6 +31,7 @@ import {
   fetchStationSeries,
   fetchStationTelemetry,
 } from "../api";
+import OutlookCard from "./OutlookCard";
 import {
   cmToMeters,
   formatChartTick,
@@ -51,6 +52,17 @@ const RANGES = [
   { id: "7d", key: "station.range7" },
   { id: "30d", key: "station.range30" },
 ];
+
+const WATER_BODY_LABELS = {
+  urban: "station.waterBodyUrban",
+  small_river: "station.waterBodySmallRiver",
+  stream: "station.waterBodyStream",
+  reservoir: "station.waterBodyReservoir",
+};
+
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+}
 
 function ChartTooltip({ active, payload, t, lang }) {
   if (!active || !payload?.length) return null;
@@ -645,6 +657,50 @@ export default function StationPanel({
                 <dt className="text-slate-400">{t("station.location")}</dt>
                 <dd className="truncate font-medium text-slate-600">{station.region}</dd>
               </div>
+              {WATER_BODY_LABELS[station.water_body_type] && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldWaterBodyType")}</dt>
+                  <dd className="truncate font-medium text-slate-600">
+                    {t(WATER_BODY_LABELS[station.water_body_type])}
+                  </dd>
+                </div>
+              )}
+              {hasValue(station.catchment_area_km2) && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldCatchment")}</dt>
+                  <dd className="font-medium text-slate-600">
+                    {formatNumber(station.catchment_area_km2, Number.isInteger(Number(station.catchment_area_km2)) ? 0 : 1)} км²
+                  </dd>
+                </div>
+              )}
+              {hasValue(station.response_time_h) && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldResponseTime")}</dt>
+                  <dd className="font-medium text-slate-600">
+                    {formatNumber(station.response_time_h, Number.isInteger(Number(station.response_time_h)) ? 0 : 1)} ч
+                  </dd>
+                </div>
+              )}
+              {hasValue(station.alert_radius_m) && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldAlertRadius")}</dt>
+                  <dd className="font-medium text-slate-600">
+                    {formatNumber(station.alert_radius_m, 0)} м
+                  </dd>
+                </div>
+              )}
+              {station.settlement && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldSettlement")}</dt>
+                  <dd className="truncate font-medium text-slate-600">{station.settlement}</dd>
+                </div>
+              )}
+              {station.river_name && (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-400">{t("station.fieldRiverName")}</dt>
+                  <dd className="truncate font-medium text-slate-600">{station.river_name}</dd>
+                </div>
+              )}
               {station.code && (
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-slate-400">{t("station.fieldCode")}</dt>
@@ -715,6 +771,8 @@ export default function StationPanel({
               </>
             )}
           </section>
+
+          <OutlookCard station={station} t={t} lang={lang} />
 
           <button
             type="button"

@@ -27,6 +27,12 @@ class Station(Base):
     hazard_type = Column(String(50), default="flood", nullable=False)  # 'flood', 'fire', 'air', 'landslide'
     status = Column(String(50), default="active", nullable=False)  # 'active', 'offline', 'error'
     thresholds = Column(JSON, nullable=False)  # {"warn_level": 900, "crit_level": 980, "max_rate_of_rise": 10}
+    water_body_type = Column(String(50), default="urban", nullable=False)  # 'urban', 'small_river', 'stream', 'reservoir'
+    catchment_area_km2 = Column(Float, nullable=True)
+    response_time_h = Column(Float, nullable=True)
+    alert_radius_m = Column(Integer, nullable=True)
+    settlement = Column(String(255), nullable=True)
+    river_name = Column(String(255), nullable=True)
 
     telemetry = relationship("Telemetry", back_populates="station", cascade="all, delete-orphan", order_by="desc(Telemetry.timestamp)")
     alerts = relationship("Alert", back_populates="station", cascade="all, delete-orphan", order_by="desc(Alert.created_at)")

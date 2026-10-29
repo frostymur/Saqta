@@ -151,11 +151,13 @@ def ensure_wifi(now):
     print("WiFi: connecting to", WIFI_SSID)
     try:
         wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-        for _ in range(100):
+        # Keep this below the ESP32 task-watchdog window. If the AP is slow or
+        # credentials are wrong, return to the main loop and retry later.
+        for _ in range(30):
             if wlan.isconnected():
                 print("WiFi: connected", wlan.ifconfig()[0])
                 return True
-            time.sleep_ms(200)
+            time.sleep_ms(100)
     except Exception as exc:
         print("WiFi error:", exc)
     print("WiFi: not connected, status", wlan.status())
@@ -180,7 +182,8 @@ def connect_mqtt(now):
             keepalive=KEEPALIVE_S,
         )
         client.set_last_will(STATUS_TOPIC, OFFLINE_PAYLOAD, retain=True, qos=1)
-        client.connect(timeout=10)
+        client.connect(timeout=2)
+        client.sock.settimeout(1)
         client.publish(STATUS_TOPIC, ONLINE_PAYLOAD, retain=True)
         mqtt_client = client
         last_ping_ms = now
@@ -350,32 +353,48 @@ def update_led(now):
 # Main loop
 # ---------------------------------------------------------------------------
 print("Saqta.kz LMS-ESP32 station starting")
+try:
+    print("Reset cause:", machine.reset_cause())
+except Exception:
+    pass
 print("Station code:", STATION_CODE)
 print("Telemetry topic:", TELEMETRY_TOPIC)
 print("Status topic:", STATUS_TOPIC)
 
-while True:
-    now = time.ticks_ms()
+# Safe mode: hold the button while resetting/powering on to skip the loop.
+if button.value() == 0:
+    print("SAFE MODE: button held at boot; main loop skipped")
+    while True:
+        set_led((0, 0, 40) if (time.ticks_ms() // 500) % 2 else (0, 0, 0))
+        time.sleep_ms(100)
 
-    wifi_ok = ensure_wifi(now)
-    if wifi_ok:
-        connect_mqtt(now)
-    else:
-        disconnect_mqtt()
+try:
+    while True:
+        now = time.ticks_ms()
 
-    update_button(now)
-    sample_water_level(now)
-    publish_telemetry(now)
-    update_led(now)
-
-    if mqtt_client is not None:
-        try:
-            mqtt_client.check_msg()
-            if ticks_diff(now, last_ping_ms) >= PING_INTERVAL_MS:
-                mqtt_client.ping()
-                last_ping_ms = now
-        except Exception as exc:
-            print("MQTT: connection lost:", exc)
+        wifi_ok = ensure_wifi(now)
+        if wifi_ok:
+            connect_mqtt(now)
+        else:
             disconnect_mqtt()
 
-    time.sleep_ms(20)
+        update_button(now)
+        sample_water_level(now)
+        publish_telemetry(now)
+        update_led(now)
+
+        if mqtt_client is not None:
+            try:
+                mqtt_client.check_msg()
+                if ticks_diff(now, last_ping_ms) >= PING_INTERVAL_MS:
+                    mqtt_client.ping()
+                    last_ping_ms = now
+            except Exception as exc:
+                print("MQTT: connection lost:", exc)
+                disconnect_mqtt()
+
+        time.sleep_ms(50)
+except KeyboardInterrupt:
+    print("Stopped by Ctrl+C")
+    set_led((0, 0, 0))
+

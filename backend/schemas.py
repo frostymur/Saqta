@@ -45,6 +45,12 @@ class StationCreate(BaseModel):
     hazard_type: Literal["flood", "fire", "air", "landslide"] = "flood"
     status: Literal["active", "offline", "error"] = "active"
     thresholds: StationThresholds
+    water_body_type: Literal["urban", "small_river", "stream", "reservoir"] = "urban"
+    catchment_area_km2: Optional[float] = Field(None, gt=0)
+    response_time_h: Optional[float] = Field(None, gt=0, le=72)
+    alert_radius_m: Optional[int] = Field(None, ge=100, le=5000)
+    settlement: Optional[str] = Field(None, max_length=255)
+    river_name: Optional[str] = Field(None, max_length=255)
 
 class StationUpdate(BaseModel):
     name: Optional[str] = None
@@ -55,6 +61,12 @@ class StationUpdate(BaseModel):
     hazard_type: Optional[Literal["flood", "fire", "air", "landslide"]] = None
     status: Optional[Literal["active", "offline", "error"]] = None
     thresholds: Optional[StationThresholds] = None
+    water_body_type: Optional[Literal["urban", "small_river", "stream", "reservoir"]] = None
+    catchment_area_km2: Optional[float] = Field(None, gt=0)
+    response_time_h: Optional[float] = Field(None, gt=0, le=72)
+    alert_radius_m: Optional[int] = Field(None, ge=100, le=5000)
+    settlement: Optional[str] = Field(None, max_length=255)
+    river_name: Optional[str] = Field(None, max_length=255)
 
 class StationResponse(BaseModel):
     id: int
@@ -67,6 +79,12 @@ class StationResponse(BaseModel):
     status: str
     health: str = "unknown"
     thresholds: Dict[str, Any]
+    water_body_type: str = "urban"
+    catchment_area_km2: Optional[float] = None
+    response_time_h: Optional[float] = None
+    alert_radius_m: Optional[int] = None
+    settlement: Optional[str] = None
+    river_name: Optional[str] = None
     current_water_level: Optional[float] = None
     current_rate_of_rise: Optional[float] = None
     current_risk_level: Optional[str] = "low"

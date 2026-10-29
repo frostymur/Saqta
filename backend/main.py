@@ -23,6 +23,7 @@ from backend.routers import (
     reports,
     geo,
     demo,
+    outlook,
 )
 
 DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
@@ -74,6 +75,7 @@ app.include_router(weather.router)
 app.include_router(reports.router)
 app.include_router(geo.router)
 app.include_router(demo.router)
+app.include_router(outlook.router)
 
 
 @app.get("/")
