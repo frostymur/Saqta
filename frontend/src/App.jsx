@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   BellRing,
@@ -19,6 +20,7 @@ import {
 import LoginModal from "./components/LoginModal";
 import { clearAuth, getStoredUser } from "./api";
 import { TRANSLATIONS } from "./data/translations";
+import { FEATURE_PAGES, FEATURE_UI } from "./data/featurePages";
 
 const Dashboard = lazy(() => import("./dashboard/Dashboard"));
 
@@ -52,10 +54,10 @@ export function navigate(path) {
    BRAND LOGO
 --------------------------------------------------------- */
 
-function SaqtaLogo() {
+function SaqtaLogo({ home = true }) {
   return (
     <a
-      href="#home"
+      href={home ? "#home" : "/"}
       aria-label="Saqta.kz home"
       className="group flex shrink-0 items-center gap-3"
     >
@@ -81,7 +83,7 @@ function SaqtaLogo() {
    HEADER
 --------------------------------------------------------- */
 
-function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout }) {
+function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout, home = true }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
 
@@ -90,7 +92,7 @@ function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout
     { label: t.nav.hardware, href: "#hardware" },
     { label: t.nav.alerts, href: "#alerts" },
     { label: t.nav.about, href: "#about" },
-  ];
+  ].map((item) => ({ ...item, href: home ? item.href : `/${item.href}` }));
 
   const getRoleLabel = () => {
     if (!currentUser) return "";
@@ -107,7 +109,7 @@ function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-5 sm:px-8 lg:px-12 xl:px-[78px]">
         {/* Logo */}
-        <SaqtaLogo />
+        <SaqtaLogo home={home} />
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-8 md:flex">
@@ -1225,7 +1227,7 @@ function FeatureDecoration({ type }) {
    FEATURE CARD
 --------------------------------------------------------- */
 
-function FeatureCard({ card }) {
+function FeatureCard({ card, onOpen }) {
   const Icon =
     card.id === "iot"
       ? Cpu
@@ -1239,7 +1241,12 @@ function FeatureCard({ card }) {
   return (
     <a
       id={card.id === "iot" ? "hardware" : card.id}
-      href={`#${card.id}`}
+      href={`/features/${card.id}`}
+      onClick={(event) => {
+        event.preventDefault();
+        onOpen?.(card.id);
+      }}
+      aria-label={card.title}
       className="group relative flex min-h-[235px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_4px_20px_-10px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_16px_35px_-15px_rgba(15,23,42,0.12)] sm:p-7"
     >
       {/* Decoration */}
@@ -1285,7 +1292,7 @@ function FeatureCard({ card }) {
    FEATURES SECTION
 --------------------------------------------------------- */
 
-function FeaturesSection({ t }) {
+function FeaturesSection({ t, onOpenCard }) {
   return (
     <section
       id="features"
@@ -1312,7 +1319,7 @@ function FeaturesSection({ t }) {
         {/* Feature cards */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {t.features.cards.map((card) => (
-            <FeatureCard key={card.id} card={card} />
+            <FeatureCard key={card.id} card={card} onOpen={onOpenCard} />
           ))}
         </div>
       </div>
@@ -1321,24 +1328,243 @@ function FeaturesSection({ t }) {
 }
 
 /* ---------------------------------------------------------
+   FEATURE DETAIL PAGE
+--------------------------------------------------------- */
+
+function FeaturePage({ id, page, ui, onBack, onOpenDashboard }) {
+  const Icon =
+    id === "iot" ? Cpu : id === "prediction" ? BrainCircuit : BellRing;
+  const prediction = id === "prediction";
+  const accent = prediction
+    ? {
+        iconBg: "bg-blue-50",
+        icon: "text-blue-500",
+        kicker: "text-blue-600",
+        chip: "border-blue-100 bg-blue-50 text-blue-700",
+        button: "bg-blue-600 hover:bg-blue-700",
+      }
+    : {
+        iconBg: "bg-emerald-50",
+        icon: "text-emerald-600",
+        kicker: "text-emerald-600",
+        chip: "border-emerald-100 bg-emerald-50 text-emerald-700",
+        button: "bg-emerald-600 hover:bg-emerald-700",
+      };
+
+  return (
+    <div>
+      <section className="relative overflow-hidden bg-slate-50 px-5 pb-14 pt-8 sm:px-8 lg:px-12 xl:px-[78px]">
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl ${
+            prediction ? "bg-blue-100/70" : "bg-emerald-100/70"
+          }`}
+        />
+        <div className="relative mx-auto max-w-[1180px]">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 transition hover:text-emerald-700"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            {ui.back}
+          </button>
+
+          <div className="mt-5 grid gap-6 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-2xl ${accent.iconBg}`}
+                >
+                  <Icon className={`h-7 w-7 ${accent.icon}`} strokeWidth={1.9} />
+                </span>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-[1.8px] ${accent.kicker}`}
+                >
+                  {page.kicker}
+                </span>
+              </div>
+
+              <h1 className="mt-5 max-w-[760px] text-[30px] font-bold leading-[1.08] tracking-[-1.4px] text-slate-900 sm:text-[40px]">
+                {page.title}
+              </h1>
+
+              <p className="mt-4 max-w-[720px] text-[13px] leading-7 text-slate-500">
+                {page.intro}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  onClick={onOpenDashboard}
+                  className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-[12px] font-semibold text-white shadow-sm transition ${accent.button}`}
+                >
+                  {ui.openMap}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-5 text-[12px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700"
+                >
+                  {ui.back}
+                </button>
+              </div>
+
+              <div className="mt-7 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {page.stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_4px_20px_-14px_rgba(15,23,42,0.18)]"
+                  >
+                    <p className="text-[20px] font-bold tracking-[-0.6px] text-slate-900">
+                      {stat.value}
+                    </p>
+                    <p className="mt-1 text-[9px] leading-4 text-slate-400">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <aside className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(15,23,42,0.3)] lg:sticky lg:top-24">
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-xl ${accent.iconBg}`}
+              >
+                <ShieldCheck className={`h-[18px] w-[18px] ${accent.icon}`} />
+              </div>
+              <h2 className="mt-3 text-[14px] font-bold text-slate-800">
+                {page.sidebar.title}
+              </h2>
+              <ul className="mt-4 space-y-2.5">
+                {page.sidebar.items.map((item) => (
+                  <li key={item} className="flex gap-2 text-[10px] leading-5 text-slate-600">
+                    <Check
+                      className={`mt-0.5 h-3 w-3 shrink-0 ${accent.icon}`}
+                      strokeWidth={2.5}
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 rounded-xl bg-slate-50 p-3 text-[10px] leading-5 text-slate-500">
+                {page.sidebar.note}
+              </p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-5 py-12 sm:px-8 lg:px-12 lg:py-14 xl:px-[78px]">
+        <div className="mx-auto max-w-[1180px]">
+          <div className="grid gap-4 md:grid-cols-2">
+            {page.sections.map((section, index) => (
+              <article
+                key={section.title}
+                className={`rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_6px_24px_-18px_rgba(15,23,42,0.28)] ${
+                  index === 0 ? "md:col-span-2" : ""
+                }`}
+              >
+                <h2 className="text-[15px] font-bold tracking-[-0.3px] text-slate-900">
+                  {section.title}
+                </h2>
+                <p className="mt-2 text-[11px] leading-6 text-slate-500">
+                  {section.body}
+                </p>
+                {section.bullets && (
+                  <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {section.bullets.map((bullet) => (
+                      <li
+                        key={bullet}
+                        className="flex gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-[10px] leading-5 text-slate-600"
+                      >
+                        <Check
+                          className={`mt-0.5 h-3 w-3 shrink-0 ${accent.icon}`}
+                          strokeWidth={2.5}
+                        />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-10">
+            <h2 className="text-[20px] font-bold tracking-[-0.6px] text-slate-900">
+              {ui.howItWorks}
+            </h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {page.steps.map((step, index) => (
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4"
+                >
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold ${accent.chip}`}
+                  >
+                    {index + 1}
+                  </span>
+                  <h3 className="mt-3 text-[12px] font-bold text-slate-800">
+                    {step.title}
+                  </h3>
+                  <p className="mt-1 text-[10px] leading-5 text-slate-500">
+                    {step.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 pb-16 sm:px-8 lg:px-12 xl:px-[78px]">
+        <div className="mx-auto max-w-[1180px] overflow-hidden rounded-3xl bg-slate-900 px-6 py-8 sm:px-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-[20px] font-bold tracking-[-0.6px] text-white">
+                {ui.ctaTitle}
+              </h2>
+              <p className="mt-2 max-w-[560px] text-[11px] leading-6 text-slate-400">
+                {ui.ctaBody}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenDashboard}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 text-[12px] font-semibold text-white transition hover:bg-emerald-400"
+            >
+              {ui.ctaButton}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
    FOOTER
 --------------------------------------------------------- */
 
-function Footer({ t }) {
+function Footer({ t, home = true }) {
   return (
     <footer
       id="about"
       className="border-t border-slate-100 bg-white px-5 py-7 sm:px-8 lg:px-12 xl:px-[78px]"
     >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <SaqtaLogo />
+        <SaqtaLogo home={home} />
 
         <p className="text-[11px] text-slate-400">
           {t.footer.copyright}
         </p>
 
         <a
-          href="#home"
+          href={home ? "#home" : "/"}
           className="inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 transition hover:text-emerald-600"
         >
           {t.footer.backToTop}
@@ -1378,6 +1604,10 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [path]);
+
   const handleSelectLang = (lang) => {
     setCurrentLang(lang);
     localStorage.setItem("saqta_lang", lang);
@@ -1404,6 +1634,45 @@ export default function App() {
   };
 
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
+  const featureId = path.startsWith("/features/")
+    ? path.slice("/features/".length)
+    : null;
+  const featurePage = featureId
+    ? FEATURE_PAGES[currentLang]?.[featureId] || FEATURE_PAGES.ru[featureId]
+    : null;
+  const featureUi = FEATURE_UI[currentLang] || FEATURE_UI.ru;
+
+  if (featurePage) {
+    return (
+      <main className="min-h-screen overflow-x-hidden bg-white font-sans text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-900">
+        <Header
+          currentLang={currentLang}
+          onSelectLang={handleSelectLang}
+          onLoginClick={() => setIsLoginOpen(true)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          home={false}
+        />
+
+        <FeaturePage
+          id={featureId}
+          page={featurePage}
+          ui={featureUi}
+          onBack={() => navigate("/")}
+          onOpenDashboard={() => navigate("/dashboard")}
+        />
+
+        <Footer t={t} home={false} />
+
+        <LoginModal
+          isOpen={isLoginOpen}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+          currentLang={currentLang}
+        />
+      </main>
+    );
+  }
 
   if (path === "/dashboard") {
     return (
@@ -1448,7 +1717,10 @@ export default function App() {
 
       <HeroSection t={t} />
 
-      <FeaturesSection t={t} />
+      <FeaturesSection
+        t={t}
+        onOpenCard={(id) => navigate(`/features/${id}`)}
+      />
 
       <Footer t={t} />
 
