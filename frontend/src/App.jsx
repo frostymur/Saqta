@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,7 +17,30 @@ import {
   X,
 } from "lucide-react";
 import LoginModal from "./components/LoginModal";
+import { clearAuth, getStoredUser } from "./api";
 import { TRANSLATIONS } from "./data/translations";
+
+const Dashboard = lazy(() => import("./dashboard/Dashboard"));
+
+/* ---------------------------------------------------------
+   TINY PATHNAME ROUTER
+   No dependency: window.location + popstate is enough for
+   the two public entry points (landing and dashboard).
+--------------------------------------------------------- */
+
+function currentPath() {
+  const path = window.location.pathname.replace(/\/+$/, "");
+  return path || "/";
+}
+
+export function navigate(path) {
+  if (window.location.pathname === path) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
 /* =========================================================
    SAQTA.KZ LANDING PAGE
@@ -169,7 +192,11 @@ function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout
           )}
 
           <a
-            href="#live-map"
+            href="/dashboard"
+            onClick={(event) => {
+              event.preventDefault();
+              navigate("/dashboard");
+            }}
             className="group inline-flex h-[42px] items-center justify-center gap-3 rounded-full bg-emerald-600 px-5 text-[12px] font-semibold text-white shadow-sm shadow-emerald-600/10 transition-all duration-200 hover:bg-emerald-700 hover:shadow-md"
           >
             {t.nav.openLiveMap}
@@ -262,8 +289,12 @@ function Header({ currentLang, onSelectLang, onLoginClick, currentUser, onLogout
             )}
 
             <a
-              href="#live-map"
-              onClick={() => setMobileMenuOpen(false)}
+              href="/dashboard"
+              onClick={(event) => {
+                event.preventDefault();
+                setMobileMenuOpen(false);
+                navigate("/dashboard");
+              }}
               className="flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-semibold text-white"
             >
               {t.nav.openLiveMap}
@@ -1037,7 +1068,11 @@ function HeroSection({ t }) {
           {/* CTAs */}
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <a
-              href="#live-map"
+              href="/dashboard"
+              onClick={(event) => {
+                event.preventDefault();
+                navigate("/dashboard");
+              }}
               className="group inline-flex h-[46px] items-center justify-center gap-3 rounded-full bg-emerald-600 px-6 text-[12px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg"
             >
               {t.hero.ctaMap}
@@ -1319,19 +1354,29 @@ function Footer({ t }) {
 --------------------------------------------------------- */
 
 export default function App() {
+  const [path, setPath] = useState(currentPath);
   const [currentLang, setCurrentLang] = useState(() => {
     return localStorage.getItem("saqta_lang") || "kk";
   });
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem("saqta_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginToast, setLoginToast] = useState(null);
+
+  useEffect(() => {
+    const onPopState = () => setPath(currentPath());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(getStoredUser());
+    window.addEventListener("saqta-auth", syncAuth);
+    window.addEventListener("storage", syncAuth);
+    return () => {
+      window.removeEventListener("saqta-auth", syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
+  }, []);
 
   const handleSelectLang = (lang) => {
     setCurrentLang(lang);
@@ -1339,34 +1384,14 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    try {
-      localStorage.setItem("saqta_user", JSON.stringify(user));
-    } catch (e) {
-      console.warn("Storage error", e);
-    }
-
-    const roleMsg =
-      user.role === "operator"
-        ? currentLang === "kk"
-          ? "ТЖД кезекші операторы ретінде кіру сәтті орындалды"
-          : currentLang === "en"
-          ? "Signed in as DChS Duty Operator"
-          : "Вы вошли в систему как Оператор ДЧС СКО"
-        : currentLang === "kk"
-        ? "Тұрғын ретінде кіру сәтті орындалды"
-        : currentLang === "en"
-        ? "Signed in as Resident Citizen"
-        : "Вы вошли в систему как Гражданин";
-
-    setLoginToast(roleMsg);
-    setTimeout(() => setLoginToast(null), 4000);
+    const storedUser = getStoredUser() || user || null;
+    setCurrentUser(storedUser);
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
+    clearAuth();
     setCurrentUser(null);
-    localStorage.removeItem("saqta_user");
-    localStorage.removeItem("saqta_token");
     setLoginToast(
       currentLang === "kk"
         ? "Жүйеден шығу орындалды"
@@ -1375,9 +1400,33 @@ export default function App() {
         : "Вы вышли из учетной записи"
     );
     setTimeout(() => setLoginToast(null), 3000);
+    navigate("/");
   };
 
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.kk;
+
+  if (path === "/dashboard") {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center bg-slate-50">
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-5 py-3 shadow-sm">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
+              <span className="text-xs font-semibold text-slate-500">Saqta.kz</span>
+            </div>
+          </div>
+        }
+      >
+        <Dashboard
+          currentLang={currentLang}
+          onSelectLang={handleSelectLang}
+          currentUser={currentUser}
+          onLoginSuccess={handleLoginSuccess}
+          onLogout={handleLogout}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white font-sans text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-900">

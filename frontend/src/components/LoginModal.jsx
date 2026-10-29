@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { User, ShieldAlert, ArrowRight, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { loginUser } from "../api";
+import { loginUser, persistAuth } from "../api";
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess, currentLang = "ru" }) {
   const [email, setEmail] = useState("");
@@ -91,6 +91,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, currentLan
     setLoading(true);
     try {
       const data = await loginUser(loginEmail, loginPass);
+      persistAuth(data);
       if (onLoginSuccess) {
         onLoginSuccess(data.user);
       }

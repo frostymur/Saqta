@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from backend.config import settings
 
@@ -24,3 +24,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_schema() -> None:
+    """Tiny additive migrations for deployments that already have the DB."""
+    inspector = inspect(engine)
+    if "stations" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("stations")}
+    if "code" in columns:
+        return
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE stations ADD COLUMN code VARCHAR(64)"))
+        connection.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_stations_code ON stations (code)")
+        )

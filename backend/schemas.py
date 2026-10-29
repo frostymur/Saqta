@@ -38,6 +38,7 @@ class StationThresholds(BaseModel):
 
 class StationCreate(BaseModel):
     name: str
+    code: Optional[str] = Field(None, max_length=64, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$")
     region: str
     lat: float
     lng: float
@@ -47,6 +48,7 @@ class StationCreate(BaseModel):
 
 class StationUpdate(BaseModel):
     name: Optional[str] = None
+    code: Optional[str] = Field(None, max_length=64, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$")
     region: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
@@ -57,11 +59,13 @@ class StationUpdate(BaseModel):
 class StationResponse(BaseModel):
     id: int
     name: str
+    code: Optional[str] = None
     region: str
     lat: float
     lng: float
     hazard_type: str
     status: str
+    health: str = "unknown"
     thresholds: Dict[str, Any]
     current_water_level: Optional[float] = None
     current_rate_of_rise: Optional[float] = None
@@ -74,10 +78,11 @@ class StationResponse(BaseModel):
 
 # --- Telemetry Schemas ---
 class TelemetryCreate(BaseModel):
-    station_id: int
+    station_id: Optional[int] = None
+    station_code: Optional[str] = Field(None, max_length=64)
     timestamp: Optional[datetime.datetime] = None
     water_level: float
-    rate_of_rise: Optional[float] = 0.0
+    rate_of_rise: Optional[float] = None
     rainfall: Optional[float] = 0.0
     temperature: Optional[float] = 10.0
     soil_moisture: Optional[float] = 50.0
@@ -100,12 +105,19 @@ class TelemetryResponse(BaseModel):
         from_attributes = True
 
 
+class TelemetryLogResponse(TelemetryResponse):
+    station_name: Optional[str] = None
+    station_region: Optional[str] = None
+
+
 # --- Alert Schemas ---
 class AlertResponse(BaseModel):
     id: int
     station_id: int
     station_name: Optional[str] = None
     station_region: Optional[str] = None
+    station_lat: Optional[float] = None
+    station_lng: Optional[float] = None
     created_at: datetime.datetime
     hazard_type: str
     risk_level: str
@@ -123,6 +135,10 @@ class AlertResponse(BaseModel):
 class AlertProcessRequest(BaseModel):
     processed_by: Optional[str] = None
     notes: Optional[str] = None
+
+class AlertDecisionRequest(BaseModel):
+    action: Literal["approve", "decline"]
+    processed_by: Optional[str] = None
 
 
 # --- ML Schemas ---

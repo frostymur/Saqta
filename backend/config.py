@@ -10,7 +10,17 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
     OPEN_METEO_URL: str = "https://api.open-meteo.com/v1/forecast"
-    
+
+    # MQTT ingest
+    MQTT_ENABLED: bool = False
+    MQTT_HOST: str = "localhost"
+    MQTT_PORT: int = 1883
+    MQTT_TOPIC: str = "floodwatch/telemetry/#"
+    MQTT_STATUS_TOPIC: str = "floodwatch/status/#"
+    MQTT_USERNAME: str = ""
+    MQTT_PASSWORD: str = ""
+    MQTT_CLIENT_ID: str = "saqta-backend"
+
     # Petropavlovsk coordinates
     PETROPAVLOVSK_LAT: float = 54.8753
     PETROPAVLOVSK_LNG: float = 69.1389

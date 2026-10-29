@@ -18,6 +18,224 @@
   }
 }
 
+/* The dashboard uses a dense type scale. Lift its smallest steps so labels
+   remain readable on laptops and projectors without touching every component. */
+.dashboard-root .text-\[7px\],
+.dashboard-root .text-\[8px\],
+.dashboard-root .text-\[9px\] {
+  font-size: 12px;
+}
+.dashboard-root .text-\[10px\] {
+  font-size: 13px;
+}
+.dashboard-root .text-\[11px\] {
+  font-size: 14px;
+}
+.dashboard-root .text-\[12px\] {
+  font-size: 14px;
+}
+.dashboard-root .text-\[13px\] {
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dashboard map                                                       */
+/* ------------------------------------------------------------------ */
+
+.saqta-station-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: none;
+}
+
+.saqta-station-marker:hover {
+  z-index: 5;
+}
+
+.saqta-station-marker:hover .saqta-station-dot {
+  transform: scale(1.15);
+}
+
+.saqta-station-dot {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.25);
+  transition: all 180ms ease;
+}
+
+.saqta-station-pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  opacity: 0.35;
+  animation: saqta-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.saqta-station-marker.risk-high .saqta-station-pulse { background: #ef4444; }
+.saqta-station-marker.risk-medium .saqta-station-pulse { background: #f59e0b; }
+.saqta-station-marker.risk-low .saqta-station-pulse { background: #10b981; }
+.saqta-station-marker.risk-unknown .saqta-station-pulse { background: #94a3b8; }
+
+.saqta-station-marker.risk-high .saqta-station-dot { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25), 0 2px 6px rgba(15, 23, 42, 0.25); }
+.saqta-station-marker.risk-medium .saqta-station-dot { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 2px 6px rgba(15, 23, 42, 0.25); }
+.saqta-station-marker.risk-unknown .saqta-station-dot { box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25), 0 2px 6px rgba(15, 23, 42, 0.2); }
+
+.saqta-station-marker.health-offline {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+}
+
+.saqta-station-marker.health-error .saqta-station-dot {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.45), 0 2px 6px rgba(15, 23, 42, 0.3);
+}
+
+.saqta-station-marker.is-selected {
+  z-index: 10;
+}
+
+.saqta-station-marker.is-selected .saqta-station-dot {
+  width: 18px;
+  height: 18px;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.18), 0 3px 8px rgba(15, 23, 42, 0.3);
+}
+
+.saqta-station-label {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 3px 8px;
+  font-family: "Onest", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #334155;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  transition: opacity 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.saqta-station-label.is-selected {
+  border-color: #a7f3d0;
+  color: #047857;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+/* Browser-geolocation marker */
+.saqta-user-marker {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.saqta-user-dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.22), 0 2px 8px rgba(15, 23, 42, 0.35);
+}
+
+.saqta-user-label {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: #2563eb;
+  padding: 3px 8px;
+  font-family: "Onest", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+}
+
+@keyframes saqta-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.5; }
+  70% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* MapLibre controls, matched to the dashboard cards */
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+.maplibregl-ctrl-group button {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.maplibregl-ctrl-attrib {
+  font-family: "Onest", sans-serif !important;
+  font-size: 11px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-radius: 8px 0 0 0;
+}
+
+.maplibregl-ctrl-scale {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: #94a3b8 !important;
+  color: #475569 !important;
+  font-family: "Onest", sans-serif !important;
+  font-size: 11px !important;
+  margin-bottom: 4px;
+}
+
+.maplibregl-ctrl-bottom-right {
+  z-index: 5;
+}
+
+/* Print only the open bulletin */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #saqta-bulletin-modal,
+  #saqta-bulletin-modal * {
+    visibility: visible;
+  }
+  #saqta-bulletin-modal {
+    position: absolute !important;
+    inset: 0 !important;
+    max-height: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+}
+
 /* Subtle, quiet scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

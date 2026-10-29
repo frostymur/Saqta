@@ -10,13 +10,32 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:////app/backend/saqta.db
+      - DATABASE_URL=sqlite:////app/data/saqta.db
       - SECRET_KEY=saqta-secret-key-digital-urpaq-2026-esil-kazakhstan
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - MQTT_ENABLED=${MQTT_ENABLED:-true}
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_TOPIC=${MQTT_TOPIC:-floodwatch/telemetry/#}
+      - MQTT_STATUS_TOPIC=${MQTT_STATUS_TOPIC:-floodwatch/status/#}
     volumes:
-      - saqta_data:/app/backend
+      - saqta_data:/app/data
       - ./backend/ml:/app/backend/ml
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: saqta_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/broker/uptime' -C 1 -W 3 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   frontend:
     build:

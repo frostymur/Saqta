@@ -3,8 +3,9 @@ import datetime
 import asyncio
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal
-from backend.models import Station, Telemetry, Alert
+from backend.models import Station, Telemetry
 from backend.services.ml_service import predict_flood
+from backend.services.alert_service import create_or_update_alert, alert_payload
 from backend.services.websocket_manager import ws_manager
 
 class FloodSimulator:
@@ -32,6 +33,7 @@ class FloodSimulator:
 
             self.step_count += 1
             now = datetime.datetime.utcnow()
+            alert_events = []
 
             for station in stations:
                 # Получаем последние 5 записей телеметрии
@@ -129,37 +131,10 @@ class FloodSimulator:
                 # Запуск ML прогноза
                 pred = predict_flood(window, thresholds)
 
-                # Если риск средний или высокий, создаем Alert
+                # Если риск средний или высокий, создаем/обновляем pending Alert
                 if pred["risk_level"] in ("medium", "high"):
-                    alert = Alert(
-                        station_id=station.id,
-                        created_at=now,
-                        hazard_type=station.hazard_type,
-                        risk_level=pred["risk_level"],
-                        risk_score=pred["risk_score"],
-                        explanation=pred["explanation"],
-                        forecast_1h=pred["forecast_1h"],
-                        forecast_2h=pred["forecast_2h"],
-                        forecast_3h=pred["forecast_3h"],
-                        status="new"
-                    )
-                    db.add(alert)
-                    db.flush()
-
-                    await ws_manager.broadcast("new_alert", {
-                        "id": alert.id,
-                        "station_id": station.id,
-                        "station_name": station.name,
-                        "station_region": station.region,
-                        "created_at": alert.created_at.isoformat(),
-                        "risk_level": alert.risk_level,
-                        "risk_score": alert.risk_score,
-                        "explanation": alert.explanation,
-                        "forecast_1h": alert.forecast_1h,
-                        "forecast_2h": alert.forecast_2h,
-                        "forecast_3h": alert.forecast_3h,
-                        "status": alert.status
-                    })
+                    alert, event_type = create_or_update_alert(db, station, pred, now)
+                    alert_events.append((event_type, alert_payload(alert)))
 
                 # Отправляем обновление телеметрии клиентам через WebSocket
                 await ws_manager.broadcast("telemetry_update", {
@@ -179,6 +154,10 @@ class FloodSimulator:
                 })
 
             db.commit()
+
+            # События оповещений рассылаем после успешного commit
+            for event_type, payload in alert_events:
+                await ws_manager.broadcast(event_type, payload)
 
         except Exception as e:
             db.rollback()

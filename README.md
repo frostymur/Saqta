@@ -60,42 +60,148 @@ saqta/
 │   ├── routers/
 │   │   ├── auth.py               # Авторизация и JWT токены
 │   │   ├── stations.py           # 13 гидропостов по РК с фильтрацией по регионам
-│   │   ├── telemetry.py          # 48-часовой срез почасовых замеров
+│   │   ├── telemetry.py          # Прием телеметрии и срезы 24ч / 7д / 30д
 │   │   ├── ml_predict.py         # Эндпоинт ML-прогноза и Explainable AI
-│   │   ├── alerts.py             # Реестр оперативных предупреждений
+│   │   ├── alerts.py             # Очередь оператора, публичная лента, статистика, журнал
 │   │   ├── simulation.py         # Симуляция волны паводка
 │   │   ├── weather.py            # Метеорологические данные Open-Meteo
 │   │   └── reports.py            # Генерация официальных сводок ДЧС
 │   ├── services/
+│   │   ├── telemetry_ingest.py   # Единый путь приема для HTTP и MQTT
+│   │   ├── mqtt_bridge.py        # MQTT-подписка с graceful fallback
+│   │   ├── alert_service.py      # Антифлуд и одна pending-тревога на станцию
 │   │   ├── ml_service.py         # Бесшовный мост с fallback-движком
 │   │   ├── websocket_manager.py  # WebSocket-брокер оперативных оповещений
 │   │   ├── weather.py            # Клиент открытого API погоды
 │   │   └── telegram.py           # Интеграция с Telegram-каналом оповещения
 │   ├── models.py                 # SQLAlchemy: User, Station, Telemetry, Alert
 │   ├── schemas.py                # Pydantic v2 схемы валидации
-│   ├── seed.py                   # Автоматический сид 13 станций по РК и 3 ролей
+│   ├── seed.py                   # Автоматический сид 13 станций, 3 ролей и 30 дней истории
+│   ├── mqtt_mock_publisher.py    # Публикация mock-телеметрии Arduino в MQTT
 │   ├── main.py                   # Точка входа FastAPI
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── CivicHeader.jsx   # Государственная шапка, 112, выбор города/языка
-│   │   │   ├── HeroStatus.jsx    # Сводный статус безопасности и ключевые цифры
-│   │   │   ├── DistrictCheck.jsx # Интерактивная проверка районов и улиц на риск
-│   │   │   ├── RiverGauges.jsx   # Гидропосты бассейна и запас до гребня дамб
-│   │   │   ├── ActionChecklist.jsx# Памятка гражданина: тревожный чемоданчик за 10 мин
-│   │   │   ├── SheltersList.jsx  # Пункты временного размещения (ПВР) с прямым звонком
-│   │   │   ├── EmergencyHelp.jsx # Прямые контакты ДЧС, Telegram-канал и форма помощи
-│   │   │   ├── StaffModal.jsx    # Служебный вход для диспетчеров ДЧС и жюри
-│   │   │   └── CivicFooter.jsx   # Гос. реквизиты, Казгидромет, акиматы
-│   │   ├── data/
-│   │   │   └── regionsData.js    # База знаний по 6 регионам РК и нац. сводке
-│   │   ├── App.jsx               # Корневой компонент
-│   │   └── index.css             # Tailwind + шрифты Onest
+│   │   ├── components/           # Лендинг, LoginModal и UI-примитивы
+│   │   ├── dashboard/            # Адаптивная панель /dashboard (MapLibre)
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── FloodMap.jsx
+│   │   │   ├── StationPanel.jsx
+│   │   │   ├── OperatorQueue.jsx
+│   │   │   ├── hooks/useLiveData.js
+│   │   │   └── lib/notifications.js
+│   │   ├── data/                 # Регионы и переводы лендинга
+│   │   ├── App.jsx               # Роутинг лендинга и /dashboard
+│   │   ├── api.js                # API-клиент, JWT и публичные эндпоинты
+│   │   └── index.css             # Tailwind, карта и маркеры
 │   ├── nginx.conf
 │   └── Dockerfile
+├── arduino/                      # Скетч Arduino Uno R3 + инструкция по сборке
+├── mosquitto/config/             # Конфигурация MQTT-брокера
+├── scripts/smoke_test.py         # End-to-end проверка API
+├── docs/SENSOR_PLAN.md           # Датчики, стоимость станций и партнерство
 ├── docker-compose.yml
 └── README.md
+```
+
+---
+
+## 🖥️ Адаптивная панель `/dashboard`
+
+Панель `/dashboard` повторяет оперативную картину FloodWatch и адаптируется под экран:
+
+| Экран | Поведение |
+| :--- | :--- |
+| **Desktop (≥1280 px)** | Три колонки: навигация, карта MapLibre и панель гидропоста |
+| **Tablet (768–1279 px)** | Карта на всю ширину, панель поста открывается в правом drawer |
+| **Mobile (<768 px)** | Нижний tab bar, панели постов и районов — bottom sheets |
+
+- **Гость** видит карту и только опубликованные оповещения в режиме чтения.
+- **Вход** (`Войти`) открывает модальное окно и после успешной авторизации переводит на `/dashboard`.
+- **Оператор ДЧС** получает очередь тревог, журнал решений и статистику.
+- Переключение регионов приближает карту ко всем постам выбранной области.
+- Живые данные приходят по WebSocket с резервным опросом каждые 15 секунд.
+
+---
+
+## 🚨 Двухступенчатый процесс оповещений
+
+ML-модель не публикует тревоги напрямую:
+
+1. **`pending`** — модель создает или обновляет одну тревогу на станцию и показывает ее только оператору.
+2. **`published`** — оператор одобряет тревогу, и она появляется в публичной ленте, на карте и в мобильных уведомлениях.
+3. **`declined`** — оператор отклоняет тревогу; граждане ее не видят.
+
+Каждое решение фиксирует `processed_by` и попадает в журнал `/api/alerts/log`. Благодаря антифлуду очередь не растет от каждого замера: на станцию существует не более одной `pending`-тревоги.
+
+---
+
+## 📡 Телеметрия: MQTT и Arduino
+
+```text
+Arduino / симулятор → публичный MQTT → backend MQTT bridge → ML → pending alert → оператор → published
+```
+
+- **Топик телеметрии:** `saqta/floodwatch/sko-demo/telemetry/<station_code>`.
+- **Топик статуса:** `saqta/floodwatch/sko-demo/status/<station_code>` (Last Will `offline`).
+- **Payload:** `station_code`, `water_level`, `rate_of_rise`, `rainfall`, `temperature`, `soil_moisture`, `demo_surge`.
+- **Скетч:** `arduino/floodwatch_station/floodwatch_station.ino` — Arduino Uno R3 + Ethernet W5100 + HC-SR04 + DHT22, кнопка demo-surge на D3, публикация каждые 5 секунд.
+- **Инструкция и сценарий:** [arduino/README.md](arduino/README.md) и [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md).
+- **Публичный брокер для демо:** `broker.hivemq.com:1883`. Для production используйте приватный брокер с TLS и паролем.
+- **Mock-публикатор:**
+  ```bash
+  PYTHONPATH=. .venv/bin/python -m backend.mqtt_mock_publisher     --station-code arduino-bridge-01     --prefix saqta/floodwatch/sko-demo --interval 1 --scenario surge --start-level 930
+  ```
+- **Отключение MQTT:** `MQTT_ENABLED=false` (по умолчанию для локального запуска).
+- **Docker:** Mosquitto по-прежнему можно поднять через compose, но для публичного демо достаточно env из `.env.example`.
+
+Если брокер недоступен, backend стартует штатно и продолжает принимать телеметрию по HTTP и от симулятора.
+
+### Подключение данных партнёра
+
+Любой пост партнёра (Казгидромет, ДЧС, локальный оператор) использует тот же
+контракт — отдельный код под каждого поставщика не нужен. Сначала добавьте пост
+в UI («Гидропосты → Добавить гидропост») с **кодом устройства**, затем отправляйте
+измерения по MQTT в `saqta/floodwatch/sko-demo/telemetry/<station_code>` или по HTTP:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/telemetry \
+  -H 'Content-Type: application/json' \
+  -d '{"station_code":"arduino-bridge-01","water_level":930.5,
+       "rate_of_rise":1.2,"rainfall":0.0,"temperature":11.0,
+       "soil_moisture":55.0}'
+```
+
+Дальше значение проходит тот же путь: валидация → ML-оценка → `pending`-тревога
+→ подтверждение оператором → `published`. Координаты выбираются на карте в форме
+добавления, сервер проверяет принадлежность выбранному региону. Новый пост может
+добавить оператор или администратор.
+
+---
+
+## 🔌 Основные эндпоинты
+
+| Метод | Путь | Доступ | Назначение |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | все | JWT-авторизация |
+| `GET` | `/api/stations?region=` | все | Гидропосты по региону; поле `health` = `online` / `stale` / `offline` / `error` |
+| `POST` | `/api/stations` | админ, оператор | Добавить пост партнёра (имя, координаты, пороги; координаты проверяются по границам региона) |
+| `POST` | `/api/telemetry` | все | Приём измерения от станции или партнёра |
+| `GET` | `/api/telemetry/{id}?hours=&limit=` | все | Последние замеры за период (до 720 ч) |
+| `GET` | `/api/telemetry/{id}/series?range=24h\|7d\|30d` | все | Разреженный ряд для графика (≤60 точек) |
+| `GET` | `/api/telemetry/log?region=&station_id=&hours=&limit=` | все | Журнал сырых показаний по всем постам (≤1000 записей, новые сверху) |
+| `GET` | `/api/ml/predict/{id}` | все | ML-прогноз + XAI |
+| `GET` | `/api/alerts/public` | все | Только опубликованные тревоги |
+| `GET` | `/api/alerts` | оператор | Очередь по статусу и региону |
+| `GET` | `/api/alerts/stats` | оператор | Сводная статистика |
+| `GET` | `/api/alerts/log` | оператор | Журнал решений |
+| `PATCH` | `/api/alerts/{id}/decision` | оператор | `{"action": "approve"\|"decline"}` |
+| `POST` | `/api/alerts/{id}/send-telegram` | оператор | Только для `published`, иначе `409` |
+
+Проверка API одной командой:
+
+```bash
+.venv/bin/python scripts/smoke_test.py --base http://127.0.0.1:8000
 ```
 
 ---
@@ -144,17 +250,40 @@ npm run dev
 Проект полностью укомплектован для экспорта в мобильные приложения через **Capacitor 8**:
 - **Package ID:** `kz.saqta.app`
 - **Платформа Android:** Готовый сгенерированный проект в `frontend/android/`
-- **Быстрый запуск:**
+- **Локальные уведомления:** `@capacitor/local-notifications` — опубликованные тревоги показываются как нативные уведомления без FCM.
+- **API для мобильного приложения:** задайте полные адреса на этапе сборки,
+  иначе приложение будет искать `/api` на `capacitor://localhost`.
   ```bash
   cd frontend
-  npm run cap:build          # Собрать веб и синхронизировать с нативным кодом
-  npm run cap:open:android   # Открыть проект в Android Studio для сборки APK
+  VITE_API_BASE=https://api.example.kz/api \
+  VITE_WS_URL=wss://api.example.kz/ws \
+  npm run cap:build
+  npm run cap:open:android   # APK / Play Store
+  npx cap add ios            # только на macOS, затем Xcode
   ```
-Подробная инструкция по сборке APK и релизу доступна в [MOBILE_GUIDE.md](file:///home/timur/projects/saqta/MOBILE_GUIDE.md).
+- **Веб-версия:** оставьте `VITE_API_BASE` пустым — используется Nginx-прокси
+  `/api` и `/ws`.
+- **iOS:** платформа добавляется на macOS; веб-часть и Capacitor-конфиг уже готовы.
+
+### Локальные уведомления
+
+`frontend/src/dashboard/lib/notifications.js` запрашивает разрешение и отправляет уведомление при появлении новой опубликованной тревоги. В браузере уведомления не показываются — вместо них работают in-app тосты. Push через FCM намеренно не используется: приложение не требует внешнего сервиса и работает в пилоте без ключей.
+
+---
+
+## 📚 Документация
+
+- [docs/SENSOR_PLAN.md](docs/SENSOR_PLAN.md) — какие данные снимать, сколько стоят станции и как партнериться с Казгидрометом.
+- [arduino/README.md](arduino/README.md) — сборка, прошивка и калибровка демо-станции.
+- [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) — сценарий демо, Arduino, кнопка surge, публичный MQTT и чек-лист репетиции.
+- `scripts/smoke_test.py` — проверка авторизации, регионов, телеметрии, ML и очереди оператора.
+- `scripts/demo_reset.py` — сброс одной станции к baseline перед прогоном.
 
 ---
 
 ## 🛡️ Безопасность и отказоустойчивость
 - Хэширование паролей по стандарту `bcrypt`.
+- Операторские эндпоинты (`/api/alerts`, `/stats`, `/log`, `/decision`) требуют JWT с ролью `operator` или `admin`.
+- Демо использует публичный MQTT-брокер без пароля. Для production обязательны приватный брокер, TLS, логин/пароль и подписанная прошивка. Не публикуйте на публичном брокере реальные или персональные данные.
 - Автономный fallback: при недоступности внешних ML-серверов или задержках сети система автоматически использует встроенный гидравлический расчетный модуль на базе данных Казгидромета.
-- Никаких сторонних платных ключей и трекеров. Все данные и картографические тайлы работают полностью автономно.
+- Никаких сторонних платных ключей и трекеров. Картографические тайлы Esri World Street Map и World Imagery работают без API-ключа.

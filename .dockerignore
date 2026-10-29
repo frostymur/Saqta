@@ -1,0 +1,11 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/android
+frontend/ios
+frontend/dist
+backend/saqta.db
+docs
+arduino

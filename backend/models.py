@@ -20,6 +20,7 @@ class Station(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
+    code = Column(String(64), unique=True, index=True, nullable=True)  # MQTT device code
     region = Column(String(255), nullable=False)  # "Петропавловск (СКО)", "Астана", "Уральск"
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -61,7 +62,7 @@ class Alert(Base):
     forecast_1h = Column(Float, nullable=False)
     forecast_2h = Column(Float, nullable=False)
     forecast_3h = Column(Float, nullable=False)
-    status = Column(String(50), default="new", nullable=False)  # 'new', 'processed'
+    status = Column(String(50), default="pending", nullable=False)  # 'pending', 'published', 'declined'
     processed_by = Column(String(255), nullable=True)
 
     station = relationship("Station", back_populates="alerts")
