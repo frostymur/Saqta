@@ -99,7 +99,6 @@ echo = machine.Pin(ECHO_PIN, machine.Pin.IN)
 np = neopixel.NeoPixel(machine.Pin(LED_PIN), 1)
 
 wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
 
 samples = [0.0] * 5
 sample_index = 0
@@ -143,6 +142,9 @@ def ticks_diff(now, then):
 
 def ensure_wifi(now):
     global last_wifi_try_ms
+    if not wlan.active():
+        wlan.active(True)
+        time.sleep_ms(500)
     if wlan.isconnected():
         return True
     if last_wifi_try_ms and ticks_diff(now, last_wifi_try_ms) < WIFI_RETRY_MS:
@@ -150,6 +152,12 @@ def ensure_wifi(now):
     last_wifi_try_ms = now
     print("WiFi: connecting to", WIFI_SSID)
     try:
+        # Clear a stale "connecting" / scan state before a new attempt.
+        try:
+            wlan.disconnect()
+        except Exception:
+            pass
+        time.sleep_ms(300)
         wlan.connect(WIFI_SSID, WIFI_PASSWORD)
         # Keep this below the ESP32 task-watchdog window. If the AP is slow or
         # credentials are wrong, return to the main loop and retry later.
@@ -160,6 +168,13 @@ def ensure_wifi(now):
             time.sleep_ms(100)
     except Exception as exc:
         print("WiFi error:", exc)
+        try:
+            wlan.active(False)
+            time.sleep_ms(300)
+            wlan.active(True)
+            time.sleep_ms(500)
+        except Exception:
+            pass
     print("WiFi: not connected, status", wlan.status())
     return False
 
