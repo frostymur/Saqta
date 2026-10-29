@@ -253,18 +253,20 @@ npm run dev
 - **Платформа Android:** Готовый сгенерированный проект в `frontend/android/`
 - **Локальные уведомления:** `@capacitor/local-notifications` — опубликованные тревоги показываются как нативные уведомления без FCM.
 - **API для мобильного приложения:** задайте полные адреса на этапе сборки,
-  иначе приложение будет искать `/api` на `capacitor://localhost`.
+  иначе приложение будет искать `/api` на `https://localhost`.
   ```bash
   cd frontend
-  VITE_API_BASE=https://api.example.kz/api \
-  VITE_WS_URL=wss://api.example.kz/ws \
-  npm run cap:build
-  npm run cap:open:android   # APK / Play Store
+  cp .env.mobile.example .env.mobile
+  npm run cap:build:mobile   # build + cap sync
+  npm run android:apk        # frontend/android/app/build/outputs/apk/debug/app-debug.apk
   npx cap add ios            # только на macOS, затем Xcode
   ```
-- **Веб-версия:** оставьте `VITE_API_BASE` пустым — используется Nginx-прокси
+- **GitHub Actions:** workflow `.github/workflows/android-apk.yml` собирает
+  debug APK без локального Android SDK: **Actions → Build Android APK → Run workflow**.
+- **Веб-версия:** оставьте `VITE_API_BASE` пустым — используется прокси
   `/api` и `/ws`.
-- **iOS:** платформа добавляется на macOS; веб-часть и Capacitor-конфиг уже готовы.
+- **iOS:** платформа добавляется на macOS; для передачи другу нужен TestFlight
+  или Ad Hoc с paid Apple Developer. Подробно — в [`MOBILE_GUIDE.md`](MOBILE_GUIDE.md).
 
 ### Локальные уведомления
 
