@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from backend.auth import require_roles
 from backend.database import get_db
-from backend.models import Station, Telemetry, User
+from backend.models import Alert, Station, Telemetry, User
 from backend.schemas import StationCreate, StationResponse, StationUpdate
 from backend.services.geo import REGION_ADMIN, locate_admin
 from backend.services.station_health import station_health
@@ -223,3 +223,20 @@ def update_station(
     db.commit()
     db.refresh(station)
     return _station_payload(station, _latest_telemetry(db, station.id))
+
+
+@router.delete("/{station_id}")
+def delete_station(
+    station_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["admin", "operator"])),
+):
+    station = db.query(Station).filter(Station.id == station_id).first()
+    if not station:
+        raise HTTPException(status_code=404, detail="Гидропост не найден")
+
+    db.query(Alert).filter(Alert.station_id == station_id).delete(synchronize_session=False)
+    db.query(Telemetry).filter(Telemetry.station_id == station_id).delete(synchronize_session=False)
+    db.delete(station)
+    db.commit()
+    return {"deleted": station_id}

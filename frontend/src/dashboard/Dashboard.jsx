@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Droplets, ShieldCheck } from "lucide-react";
+import { Droplets } from "lucide-react";
 import LoginModal from "../components/LoginModal";
 import { decideAlert, sendAlertTelegram } from "../api";
 import DashboardHeader from "./DashboardHeader";
 import DashboardSidebar from "./DashboardSidebar";
 import FloodMap from "./FloodMap";
 import StationPanel from "./StationPanel";
-import DistrictCheck from "./DistrictCheck";
 import AlertsCenter from "./AlertsCenter";
 import OperatorQueue from "./OperatorQueue";
 import OperatorStats from "./OperatorStats";
@@ -22,7 +21,7 @@ import { StationDetailsModal } from "./InfoModal";
 import { getRegionById, getRegionByName } from "./data/dashboardRegions";
 import { createT } from "./data/dashboardI18n";
 import { useLiveData } from "./hooks/useLiveData";
-import { healthLabelKey, highestRiskStation, nearestStation } from "./lib/format";
+import { healthLabelKey, highestRiskStation } from "./lib/format";
 import { notifyPublishedAlert } from "./lib/notifications";
 
 export default function Dashboard({
@@ -46,7 +45,6 @@ export default function Dashboard({
 
   const [selectedCase, setSelectedCase] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [districtOpen, setDistrictOpen] = useState(false);
   const [basemap, setBasemap] = useState("map");
   const [flyRequest, setFlyRequest] = useState(null);
   const [toasts, setToasts] = useState([]);
@@ -55,7 +53,6 @@ export default function Dashboard({
   const [busyDecisions, setBusyDecisions] = useState(() => new Set());
 
   const pendingStationRef = useRef(null);
-  const pendingDistrictRef = useRef(null);
   const toastTimersRef = useRef(new Map());
 
   const isOperator = Boolean(currentUser && ["operator", "admin"].includes(currentUser.role));
@@ -153,14 +150,6 @@ export default function Dashboard({
   useEffect(() => {
     if (!stations.length) return;
 
-    if (pendingDistrictRef.current) {
-      const district = pendingDistrictRef.current;
-      pendingDistrictRef.current = null;
-      const nearest = nearestStation(stations, district.lat, district.lng);
-      if (nearest) setSelectedCase(String(nearest.id));
-      return;
-    }
-
     if (pendingStationRef.current != null) {
       const found = stations.find(
         (station) => String(station.id) === String(pendingStationRef.current)
@@ -188,9 +177,7 @@ export default function Dashboard({
       setRegionId(nextRegionId);
       setSelectedCase(null);
       pendingStationRef.current = null;
-      pendingDistrictRef.current = null;
       setPanelOpen(false);
-      setDistrictOpen(false);
       setView("map");
       setFlyRequest({
         center: nextRegion.center,
@@ -226,40 +213,8 @@ export default function Dashboard({
 
       setView("map");
       setPanelOpen(openPanel);
-      setDistrictOpen(false);
     },
     [region.zoom, regionId]
-  );
-
-  const focusDistrict = useCallback(
-    (district) => {
-      if (!district) return;
-      const targetRegionId = district.regionId || regionId;
-
-      if (targetRegionId !== regionId) {
-        pendingDistrictRef.current = district;
-        setRegionId(targetRegionId);
-        setSelectedCase(null);
-        setFlyRequest({
-          center: [district.lng, district.lat],
-          zoom: 14,
-          ts: Date.now(),
-        });
-      } else {
-        const nearest = nearestStation(stations, district.lat, district.lng);
-        if (nearest) setSelectedCase(String(nearest.id));
-        setFlyRequest({
-          center: [district.lng, district.lat],
-          zoom: 14,
-          ts: Date.now(),
-        });
-      }
-
-      setView("map");
-      setDistrictOpen(false);
-      setPanelOpen(false);
-    },
-    [regionId, stations]
   );
 
   const focusAlert = useCallback(
@@ -284,7 +239,6 @@ export default function Dashboard({
 
       setView("map");
       setPanelOpen(true);
-      setDistrictOpen(false);
     },
     [regionId]
   );
@@ -294,7 +248,6 @@ export default function Dashboard({
     if (nextView === "reports") setReportsNonce((value) => value + 1);
     if (nextView !== "map") {
       setPanelOpen(false);
-      setDistrictOpen(false);
     }
   }, []);
 
@@ -372,7 +325,6 @@ export default function Dashboard({
         onSelectRegion={changeRegion}
         stations={stations}
         onSelectStation={selectStation}
-        onSelectDistrict={focusDistrict}
         alerts={publicAlerts}
         onSelectAlert={focusAlert}
         onViewAlerts={() => navigateView("alerts")}
@@ -408,27 +360,8 @@ export default function Dashboard({
                 t={t}
               />
 
-              {/* Desktop district card */}
-              <div className="absolute bottom-3 left-3 z-20 hidden md:block">
-                <DistrictCheck
-                  region={region}
-                  stations={stations}
-                  onSelectDistrict={focusDistrict}
-                  t={t}
-                  lang={currentLang}
-                />
-              </div>
-
-              {/* Mobile district / station actions */}
+              {/* Mobile station action */}
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end gap-2 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setDistrictOpen(true)}
-                  className="pointer-events-auto inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 px-3 text-[10px] font-semibold text-slate-700 shadow-lg backdrop-blur"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  {t("district.open")}
-                </button>
                 {selectedStation && (
                   <button
                     type="button"
@@ -464,6 +397,7 @@ export default function Dashboard({
                   loading={loading}
                   isOperator={isOperator}
                   onStationCreated={refresh}
+                  onStationDeleted={refresh}
                   onToast={pushToast}
                   t={t}
                   lang={currentLang}
@@ -611,27 +545,6 @@ export default function Dashboard({
         t={t}
         alertCount={isOperator ? pendingAlerts.length : 0}
       />
-
-      {/* District bottom sheet (phone) */}
-      {districtOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
-          <div className="absolute inset-0 bg-slate-900/35 backdrop-blur-[2px]" onClick={() => setDistrictOpen(false)} />
-          <div
-            className="absolute inset-x-0 bottom-0 overflow-hidden rounded-t-2xl bg-white shadow-2xl"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          >
-            <DistrictCheck
-              region={region}
-              stations={stations}
-              onSelectDistrict={focusDistrict}
-              onClose={() => setDistrictOpen(false)}
-              t={t}
-              lang={currentLang}
-              mobile
-            />
-          </div>
-        </div>
-      )}
 
       {/* Station panel drawer / bottom sheet (below xl) */}
       {panelOpen && (

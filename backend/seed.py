@@ -86,152 +86,146 @@ def seed_database():
             db.add_all(users_to_seed)
             db.commit()
 
-        # 2. Список опорных гидропостов по всем регионам Казахстана
+        # 2. Опорные гидропосты: малые реки и ручьи в сельской местности
         all_stations_data = [
             # Северо-Казахстанская область (Петропавловск) — бассейн р. Есиль
             {
-                "name": "Сергеевское водохранилище",
-                "region": "Петропавловск (СКО)",
-                "lat": 53.85465,
-                "lng": 67.41099,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 800, "crit_level": 1100, "max_rate_of_rise": 15},
-                "start_lvl": 740.0, "target_lvl": 690.0
-            },
-            {
-                "name": "Гидропост с. Покровка",
+                "name": "Ручей у с. Покровка",
                 "region": "Петропавловск (СКО)",
                 "lat": 54.29588,
                 "lng": 68.33397,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 950, "crit_level": 1100, "max_rate_of_rise": 12},
-                "start_lvl": 820.0, "target_lvl": 905.0
-            },
-            {
-                "name": "Гидропост г. Петропавловск (Мост)",
-                "region": "Петропавловск (СКО)",
-                "lat": 54.88262,
-                "lng": 69.11862,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 940, "crit_level": 980, "max_rate_of_rise": 10},
-                "start_lvl": 790.0, "target_lvl": 928.0
-            },
-            {
-                "name": "Пос. Заречный (Зона поймы)",
-                "region": "Петропавловск (СКО)",
-                "lat": 54.90504,
-                "lng": 69.13003,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 880, "crit_level": 950, "max_rate_of_rise": 8},
-                "start_lvl": 750.0, "target_lvl": 900.0
+                "start_lvl": 840.0, "target_lvl": 900.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 120,
+                "response_time_h": 2.5,
+                "alert_radius_m": 500,
+                "settlement": "с. Покровка",
+                "river_name": "руч. Покровка"
             },
 
             # г. Астана — бассейн р. Есиль
             {
-                "name": "Астанинское (Вячеславское) водохранилище",
-                "region": "Астана",
-                "lat": 50.96489,
-                "lng": 72.20781,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 700, "crit_level": 850, "max_rate_of_rise": 10},
-                "start_lvl": 610.0, "target_lvl": 600.0
-            },
-            {
-                "name": "Гидропост р. Есиль (г. Астана, Мост М-1)",
-                "region": "Астана",
-                "lat": 51.15323,
-                "lng": 71.42617,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 450, "crit_level": 550, "max_rate_of_rise": 8},
-                "start_lvl": 320.0, "target_lvl": 420.0
-            },
-            {
-                "name": "Защитная дамба г. Астана (оз. Майбалык)",
+                "name": "Ручей у с. Коянды",
                 "region": "Астана",
                 "lat": 51.02226,
                 "lng": 71.51653,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 380, "crit_level": 480, "max_rate_of_rise": 6},
-                "start_lvl": 260.0, "target_lvl": 330.0
+                "start_lvl": 300.0, "target_lvl": 360.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 90,
+                "response_time_h": 2.0,
+                "alert_radius_m": 500,
+                "settlement": "с. Коянды",
+                "river_name": "руч. Коянды"
             },
 
-            # Западно-Казахстанская область (Уральск) — бассейн р. Жайык (Урал)
+            # Западно-Казахстанская область (Уральск) — бассейн р. Деркул
             {
-                "name": "Гидропост г. Уральск (р. Жайык)",
-                "region": "Уральск (ЗКО)",
-                "lat": 51.21996,
-                "lng": 51.39585,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 700, "crit_level": 850, "max_rate_of_rise": 12},
-                "start_lvl": 640.0, "target_lvl": 640.0
-            },
-            {
-                "name": "Гидропост р. Деркул (с. Белес)",
+                "name": "Р. Деркул у с. Белес",
                 "region": "Уральск (ЗКО)",
                 "lat": 51.26592,
                 "lng": 51.06059,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 600, "crit_level": 720, "max_rate_of_rise": 10},
-                "start_lvl": 450.0, "target_lvl": 540.0
+                "start_lvl": 500.0, "target_lvl": 560.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 140,
+                "response_time_h": 3.0,
+                "alert_radius_m": 500,
+                "settlement": "с. Белес",
+                "river_name": "р. Деркул"
             },
 
             # Атырауская область (Атырау) — низовья р. Жайык
             {
-                "name": "Гидропост г. Атырау (р. Жайык)",
+                "name": "Р. Жайык у с. Балыкши",
                 "region": "Атырау",
-                "lat": 47.11915,
-                "lng": 51.91639,
+                "lat": 47.07500,
+                "lng": 51.86000,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 500, "crit_level": 600, "max_rate_of_rise": 8},
-                "start_lvl": 410.0, "target_lvl": 470.0
+                "start_lvl": 400.0, "target_lvl": 460.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 180,
+                "response_time_h": 3.5,
+                "alert_radius_m": 500,
+                "settlement": "с. Балыкши",
+                "river_name": "р. Жайык"
             },
 
             # Костанайская область (Костанай) — бассейн р. Тобол
             {
-                "name": "Каратомарское водохранилище",
+                "name": "Р. Тобол у с. Заречное",
                 "region": "Костанай",
-                "lat": 52.89487,
-                "lng": 63.05225,
+                "lat": 53.18000,
+                "lng": 63.66000,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 800, "crit_level": 950, "max_rate_of_rise": 12},
-                "start_lvl": 690.0, "target_lvl": 700.0
-            },
-            {
-                "name": "Гидропост г. Костанай (Большой мост)",
-                "region": "Костанай",
-                "lat": 53.20702,
-                "lng": 63.64843,
-                "hazard_type": "flood",
-                "status": "active",
-                "thresholds": {"warn_level": 600, "crit_level": 750, "max_rate_of_rise": 10},
-                "start_lvl": 480.0, "target_lvl": 560.0
+                "start_lvl": 680.0, "target_lvl": 740.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 220,
+                "response_time_h": 4.0,
+                "alert_radius_m": 500,
+                "settlement": "с. Заречное",
+                "river_name": "р. Тобол"
             },
 
             # Актюбинская область (Актобе) — бассейн р. Илек
             {
-                "name": "Актюбинское водохранилище (р. Илек)",
+                "name": "Р. Илек у с. Акжар",
                 "region": "Актобе",
-                "lat": 50.14045,
-                "lng": 57.32497,
+                "lat": 50.26000,
+                "lng": 57.33000,
                 "hazard_type": "flood",
                 "status": "active",
                 "thresholds": {"warn_level": 550, "crit_level": 680, "max_rate_of_rise": 10},
-                "start_lvl": 420.0, "target_lvl": 480.0
+                "start_lvl": 450.0, "target_lvl": 520.0,
+                "water_body_type": "small_river",
+                "catchment_area_km2": 160,
+                "response_time_h": 3.0,
+                "alert_radius_m": 500,
+                "settlement": "с. Акжар",
+                "river_name": "р. Илек"
             }
         ]
 
         now = datetime.datetime.utcnow()
+
+        # Удаляем старые городские демо-станции, сохраняя устройства с кодом (Arduino).
+        old_station_names = [
+            "Сергеевское водохранилище",
+            "Гидропост с. Покровка",
+            "Гидропост г. Петропавловск (Мост)",
+            "Пос. Заречный (Зона поймы)",
+            "Астанинское (Вячеславское) водохранилище",
+            "Гидропост р. Есиль (г. Астана, Мост М-1)",
+            "Защитная дамба г. Астана (оз. Майбалык)",
+            "Гидропост г. Уральск (р. Жайык)",
+            "Гидропост р. Деркул (с. Белес)",
+            "Гидропост г. Атырау (р. Жайык)",
+            "Каратомарское водохранилище",
+            "Гидропост г. Костанай (Большой мост)",
+            "Актюбинское водохранилище (р. Илек)",
+        ]
+        old_ids = [
+            station.id
+            for station in db.query(Station)
+            .filter(Station.name.in_(old_station_names), Station.code.is_(None))
+            .all()
+        ]
+        if old_ids:
+            db.query(Alert).filter(Alert.station_id.in_(old_ids)).delete(synchronize_session=False)
+            db.query(Telemetry).filter(Telemetry.station_id.in_(old_ids)).delete(synchronize_session=False)
+            db.query(Station).filter(Station.id.in_(old_ids)).delete(synchronize_session=False)
+            db.flush()
 
         for s_info in all_stations_data:
             existing = db.query(Station).filter(Station.name == s_info["name"]).first()
@@ -243,7 +237,13 @@ def seed_database():
                     lng=s_info["lng"],
                     hazard_type=s_info["hazard_type"],
                     status=s_info["status"],
-                    thresholds=s_info["thresholds"]
+                    thresholds=s_info["thresholds"],
+                    water_body_type=s_info["water_body_type"],
+                    catchment_area_km2=s_info["catchment_area_km2"],
+                    response_time_h=s_info["response_time_h"],
+                    alert_radius_m=s_info["alert_radius_m"],
+                    settlement=s_info["settlement"],
+                    river_name=s_info["river_name"]
                 )
                 db.add(station)
                 db.flush()
@@ -253,6 +253,12 @@ def seed_database():
                 station.lat = s_info["lat"]
                 station.lng = s_info["lng"]
                 station.thresholds = s_info["thresholds"]
+                station.water_body_type = s_info["water_body_type"]
+                station.catchment_area_km2 = s_info["catchment_area_km2"]
+                station.response_time_h = s_info["response_time_h"]
+                station.alert_radius_m = s_info["alert_radius_m"]
+                station.settlement = s_info["settlement"]
+                station.river_name = s_info["river_name"]
 
             # История ~30 дней: для новой станции целиком, для существующей — только старый пробел
             _ensure_telemetry_history(db, station, now, s_info["target_lvl"])

@@ -142,6 +142,10 @@ export async function createStation(payload) {
   return request("/stations", { method: "POST", body: payload, auth: true });
 }
 
+export async function deleteStation(stationId) {
+  return request(`/stations/${stationId}`, { method: "DELETE", auth: true });
+}
+
 export async function fetchStationTelemetry(stationId, hours = 720) {
   return request(`/telemetry/${stationId}?hours=${hours}`);
 }

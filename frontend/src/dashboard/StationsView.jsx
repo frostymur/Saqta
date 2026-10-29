@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { ArrowUpRight, Droplets, Plus, Search, Waves } from "lucide-react";
+import { ArrowUpRight, Droplets, Plus, Search, Trash2, Waves } from "lucide-react";
+import { deleteStation } from "../api";
 import AddStationModal from "./AddStationModal";
 import {
   formatNumber,
@@ -34,6 +35,7 @@ export default function StationsView({
   loading,
   isOperator = false,
   onStationCreated,
+  onStationDeleted,
   onToast,
   t,
   lang = "en",
@@ -59,6 +61,17 @@ export default function StationsView({
         return (Number(b.current_water_level) || 0) - (Number(a.current_water_level) || 0);
       });
   }, [stations, filter, query]);
+
+  const handleDelete = async (station) => {
+    if (!window.confirm(t("station.deleteConfirm"))) return;
+    try {
+      await deleteStation(station.id);
+      onStationDeleted?.();
+      onToast?.(t("station.deleted"), "success");
+    } catch {
+      onToast?.(t("station.deleteError"), "error");
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-4xl">
@@ -129,77 +142,95 @@ export default function StationsView({
             const place = station.settlement || station.river_name;
             const subtitle = place ? `${station.region} · ${place}` : station.region;
             return (
-              <button
-                key={station.id}
-                type="button"
-                onClick={() => onSelectStation?.(station)}
-                className={`group rounded-2xl border bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                  selected ? "border-emerald-400 ring-2 ring-emerald-500/10" : "border-slate-100"
-                }`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <span
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white"
-                    style={{ backgroundColor: meta.hex }}
-                  >
-                    <Droplets className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate text-[12px] font-bold text-slate-800">{station.name}</p>
-                      {waterBodyBadge && (
-                        <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-1.5 py-0.5 text-[8px] font-semibold text-sky-700">
-                          {t(waterBodyBadge)}
-                        </span>
-                      )}
+              <div key={station.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => onSelectStation?.(station)}
+                  className={`group w-full rounded-2xl border bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                    selected ? "border-emerald-400 ring-2 ring-emerald-500/10" : "border-slate-100"
+                  }`}
+                >
+                  <div className={`flex items-start gap-2.5 ${isOperator ? "pr-8" : ""}`}>
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white"
+                      style={{ backgroundColor: meta.hex }}
+                    >
+                      <Droplets className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[12px] font-bold text-slate-800">{station.name}</p>
+                        {waterBodyBadge && (
+                          <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-1.5 py-0.5 text-[8px] font-semibold text-sky-700">
+                            {t(waterBodyBadge)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-[9px] text-slate-400">
+                        {subtitle} · {formatRelative(station.last_updated, lang)}
+                      </p>
                     </div>
-                    <p className="truncate text-[9px] text-slate-400">
-                      {subtitle} · {formatRelative(station.last_updated, lang)}
-                    </p>
+                    {!isOperator && (
+                      <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:text-emerald-600" />
+                    )}
                   </div>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:text-emerald-600" />
-                </div>
 
-                <div className="mt-3 flex items-end justify-between gap-2">
-                  <div>
-                    <p className="text-[8px] uppercase tracking-wide text-slate-400">{t("station.currentLevel")}</p>
-                    <p className="text-lg font-bold leading-tight text-slate-900">
-                      {formatNumber(station.current_water_level, 0)}
-                      <span className="ml-0.5 text-[9px] font-medium text-slate-400">{t("common.cm")}</span>
-                    </p>
+                  <div className="mt-3 flex items-end justify-between gap-2">
+                    <div>
+                      <p className="text-[8px] uppercase tracking-wide text-slate-400">{t("station.currentLevel")}</p>
+                      <p className="text-lg font-bold leading-tight text-slate-900">
+                        {formatNumber(station.current_water_level, 0)}
+                        <span className="ml-0.5 text-[9px] font-medium text-slate-400">{t("common.cm")}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] uppercase tracking-wide text-slate-400">{t("station.criticalLevel")}</p>
+                      <p className="text-[12px] font-semibold text-slate-600">
+                        {formatNumber(station.thresholds?.crit_level, 0)} {t("common.cm")}
+                      </p>
+                    </div>
+                    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.badge}`}>
+                      {t(riskLabelKey(risk))}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[8px] uppercase tracking-wide text-slate-400">{t("station.criticalLevel")}</p>
-                    <p className="text-[12px] font-semibold text-slate-600">
-                      {formatNumber(station.thresholds?.crit_level, 0)} {t("common.cm")}
-                    </p>
-                  </div>
-                  <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.badge}`}>
-                    {t(riskLabelKey(risk))}
-                  </span>
-                </div>
 
-                <div className="mt-2.5 flex items-center gap-1.5 border-t border-slate-50 pt-2">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      healthMeta(station.health).dot
-                    }`}
-                  />
-                  <span
-                    className={`text-[9px] font-semibold ${
-                      healthMeta(station.health).text
-                    }`}
+                  <div className="mt-2.5 flex items-center gap-1.5 border-t border-slate-50 pt-2">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        healthMeta(station.health).dot
+                      }`}
+                    />
+                    <span
+                      className={`text-[9px] font-semibold ${
+                        healthMeta(station.health).text
+                      }`}
+                    >
+                      {t(healthLabelKey(station.health))}
+                    </span>
+                    <span className="text-[9px] text-slate-400">
+                      · {formatRelative(station.last_updated, lang)}
+                    </span>
+                    <span className="ml-auto text-[9px] font-semibold text-emerald-700 group-hover:underline">
+                      {t("alerts.showOnMap")} →
+                    </span>
+                  </div>
+                </button>
+
+                {isOperator && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDelete(station);
+                    }}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                    aria-label={t("station.delete")}
+                    title={t("station.delete")}
                   >
-                    {t(healthLabelKey(station.health))}
-                  </span>
-                  <span className="text-[9px] text-slate-400">
-                    · {formatRelative(station.last_updated, lang)}
-                  </span>
-                  <span className="ml-auto text-[9px] font-semibold text-emerald-700 group-hover:underline">
-                    {t("alerts.showOnMap")} →
-                  </span>
-                </div>
-              </button>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

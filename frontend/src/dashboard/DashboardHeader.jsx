@@ -4,7 +4,6 @@ import {
   Droplets,
   Globe2,
   LogOut,
-  MapPin,
   Search,
   User,
   UserRound,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import NotificationsBell from "./NotificationsBell";
 import RegionSelector from "./RegionSelector";
-import { allDistricts, DASHBOARD_REGIONS } from "./data/dashboardRegions";
+import { DASHBOARD_REGIONS } from "./data/dashboardRegions";
 
 function LanguageSwitch({ currentLang, onSelectLang, compact = false }) {
   return (
@@ -38,7 +37,7 @@ function LanguageSwitch({ currentLang, onSelectLang, compact = false }) {
   );
 }
 
-function SearchBox({ t, stations, regionId, onSelectStation, onSelectDistrict, onSelectRegion, autoFocus, onClose }) {
+function SearchBox({ t, stations, regionId, onSelectStation, onSelectRegion, autoFocus, onClose }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(Boolean(autoFocus));
   const [active, setActive] = useState(0);
@@ -57,19 +56,6 @@ function SearchBox({ t, stations, regionId, onSelectStation, onSelectDistrict, o
     const q = query.trim().toLowerCase();
     const matches = (value) => String(value || "").toLowerCase().includes(q);
     const result = [];
-
-    allDistricts().forEach((district) => {
-      if (!q || matches(district.name) || matches(district.nameEn) || matches(district.regionName)) {
-        result.push({
-          type: "district",
-          id: `district-${district.id}`,
-          title: `${district.name}${district.nameEn ? ` · ${district.nameEn}` : ""}`,
-          subtitle: district.regionName,
-          payload: district,
-          score: district.regionId === regionId ? 2 : 1,
-        });
-      }
-    });
 
     DASHBOARD_REGIONS.forEach((region) => {
       if (q && (matches(region.name) || matches(region.shortName) || matches(region.river))) {
@@ -117,7 +103,6 @@ function SearchBox({ t, stations, regionId, onSelectStation, onSelectDistrict, o
   const select = (item) => {
     if (!item || item.type === "hint") return;
     if (item.type === "station") onSelectStation(item.payload);
-    if (item.type === "district") onSelectDistrict(item.payload);
     if (item.type === "region") onSelectRegion(item.payload.id);
     setQuery("");
     setOpen(false);
@@ -177,7 +162,7 @@ function SearchBox({ t, stations, regionId, onSelectStation, onSelectDistrict, o
             <p className="px-3 py-6 text-center text-[10px] text-slate-400">{t("header.noResults")}</p>
           ) : (
             suggestions.map((item, index) => {
-              const Icon = item.type === "station" ? Waves : item.type === "district" ? MapPin : Globe2;
+              const Icon = item.type === "station" ? Waves : Globe2;
               return (
                 <button
                   key={item.id}
@@ -193,8 +178,6 @@ function SearchBox({ t, stations, regionId, onSelectStation, onSelectDistrict, o
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
                       item.type === "station"
                         ? "bg-emerald-50 text-emerald-600"
-                        : item.type === "district"
-                        ? "bg-sky-50 text-sky-600"
                         : "bg-slate-100 text-slate-500"
                     }`}
                   >
@@ -226,7 +209,6 @@ export default function DashboardHeader({
   onSelectRegion,
   stations,
   onSelectStation,
-  onSelectDistrict,
   alerts,
   onSelectAlert,
   onViewAlerts,
@@ -279,7 +261,6 @@ export default function DashboardHeader({
           stations={stations}
           regionId={regionId}
           onSelectStation={onSelectStation}
-          onSelectDistrict={onSelectDistrict}
           onSelectRegion={onSelectRegion}
         />
       </div>
@@ -413,7 +394,6 @@ export default function DashboardHeader({
               stations={stations}
               regionId={regionId}
               onSelectStation={onSelectStation}
-              onSelectDistrict={onSelectDistrict}
               onSelectRegion={onSelectRegion}
               autoFocus
               onClose={() => setMobileSearchOpen(false)}
