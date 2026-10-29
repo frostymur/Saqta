@@ -28,6 +28,14 @@ operator queue → map / logs / bulletin → network disconnect → offline stat
 The button adds a virtual **+60 cm** over 20 s, holds 90 s, then resets.
 Press again to reset immediately. It is marked as `demo_surge` in the payload.
 
+### Alternative: LMS-ESP32 v2 (MicroPython)
+
+If you use the LMS-ESP32 v2 instead of the Arduino Uno, the ready firmware is in
+[`lms-esp32/`](../lms-esp32/). It uses the same station code, topics, button
+logic and Last Will, but Wi-Fi instead of Ethernet and 3.3 V GPIO. **HC-SR04
+ECHO must go through a 1k/2k divider** — see
+[`lms-esp32/README.md`](../lms-esp32/README.md).
+
 ## 3. Broker and backend
 
 The demo uses the public broker **`broker.hivemq.com:1883`**. No local broker
