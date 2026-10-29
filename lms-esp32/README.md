@@ -2,7 +2,7 @@
 
 This is the MicroPython port of the Arduino demo for the **Anton's Mindstorms
 LMS-ESP32 v2** board. It publishes the same MQTT contract, uses Wi-Fi instead of
-Ethernet, and keeps the demo surge button and Last Will offline status.
+Ethernet, and keeps the automatic demo surge and Last Will offline status.
 
 Files:
 
@@ -31,8 +31,6 @@ MicroPython 1.24.
 | Ground | GND | GND |
 | Trigger | TRIG | **GPIO18** |
 | Echo | ECHO | **GPIO19** via divider: ECHO → 1 kΩ → GPIO19, GPIO19 → 2 kΩ → GND |
-| Button | one leg | **GPIO23** |
-| Button | other leg | **GND** (internal pull-up) |
 | Status LED | — | on-board NeoPixel **GPIO25** |
 
 If you use a 3.3 V-compatible ultrasonic module, the divider is not needed —
@@ -113,21 +111,23 @@ If the station card is not around **930 cm** with the cup, adjust
 `STATION_DATUM_OFFSET_CM` until it is. The dashboard warning/critical
 thresholds for the demo station should be **940 / 980 cm**.
 
-## 6. Demo surge button
+## 6. Automatic demo surge (no button)
 
-Button between **GPIO23** and **GND**:
+There is **no button**. 30 seconds after boot the firmware automatically enters
+a virtual surge:
 
-- press once: virtual **+60 cm** ramp over 20 s;
+- +60 cm ramp over 20 s;
 - holds for 90 s, then auto-resets;
-- press again: immediate reset;
-- publish interval changes from 5 s to **2 s**;
+- publish interval stays 5 s;
 - `rate_of_rise` becomes 12 cm/h;
 - payload gets `"demo_surge": 1`;
 - on-board NeoPixel turns **red**;
-- serial prints `DEMO: surge ON (+60 cm)` / `OFF`.
+- serial prints `DEMO: AUTO SURGE ON (+60 cm) after 30 s`.
 
 With a 930 cm baseline, the level reaches 980 cm after about 17 s and the
-operator gets a high-risk pending alert.
+operator gets a high-risk pending alert. If the ultrasonic sensor is absent,
+the surge publishes a labelled fallback level (`demo_sensor_fallback: 1`) so
+the dashboard demo still works.
 
 ## 7. Wi-Fi / MQTT health
 

@@ -2,21 +2,24 @@
 Saqta.kz / FloodWatch — LMS-ESP32 v2 (MicroPython) field station.
 
 Hardware
-    LMS-ESP32 v2 (ESP32-PICO-V3-02, MicroPython 1.24)
+    LMS-ESP32 v2 (ESP32-PICO-V3-02, MicroPython 1.27)
     HC-SR04 / JSN-SR04T ultrasonic sensor:
-        VCC  -> 5V (board 5V pin)
+        VCC  -> 5V
         GND  -> GND
         TRIG -> GPIO18
-        ECHO -> GPIO19 through a voltage divider (see README)
-    Demo surge button:
-        GPIO23 -> GND (internal pull-up)
+        ECHO -> GPIO19 through a 1k/2k divider (3.3 V GPIO!)
     On-board RGB NeoPixel: GPIO25
 
-The sketch publishes to the same public MQTT namespace as the Arduino demo:
+Demo behaviour
+    After AUTO_SURGE_DELAY_MS (30 s) the station automatically enters a
+    virtual +60 cm surge for 90 s, then resets. No button is required.
+    If the ultrasonic sensor is absent or has no valid echo, the surge
+    publishes a labelled fallback level (930 cm + surge) so the dashboard
+    demo still produces a high-risk alert.
+
+MQTT
     <prefix>/telemetry/<station_code>
     <prefix>/status/<station_code>   (retained Last Will "offline")
-
-No timestamp is sent; the backend stamps the receive time.
 """
 
 import binascii
@@ -25,10 +28,11 @@ import machine
 import network
 import time
 import neopixel
+
 from umqtt.simple import MQTTClient
 
 # ---------------------------------------------------------------------------
-# Configuration — change these before flashing
+# Configuration
 # ---------------------------------------------------------------------------
 WIFI_SSID = "CHANGE_ME"
 WIFI_PASSWORD = "CHANGE_ME"
@@ -39,17 +43,15 @@ MQTT_PREFIX = "saqta/floodwatch/sko-demo"
 STATION_CODE = "arduino-bridge-01"
 
 # ---------------------------------------------------------------------------
-# Pins (LMS-ESP32 v2 safe GPIOs)
+# Pins (LMS-ESP32 v2)
+# Do NOT use GPIO23 for general I/O on this board: it causes a WDT reset.
 # ---------------------------------------------------------------------------
 TRIG_PIN = 18
 ECHO_PIN = 19
-BUTTON_PIN = 23
 LED_PIN = 25
 
 # ---------------------------------------------------------------------------
 # Calibration: cup-of-water defaults (H=40 cm, initial depth=10 cm -> 930 cm)
-# For a real bridge, set SENSOR_MOUNT_HEIGHT_CM and STATION_DATUM_OFFSET_CM
-# from the staff-gauge procedure in the README.
 # ---------------------------------------------------------------------------
 SENSOR_MOUNT_HEIGHT_CM = 40.0
 STATION_DATUM_OFFSET_CM = 920.0
@@ -58,28 +60,30 @@ MAX_DISTANCE_CM = SENSOR_MOUNT_HEIGHT_CM
 MIN_WATER_LEVEL_CM = 0.0
 MAX_WATER_LEVEL_CM = 1200.0
 
+DEMO_FALLBACK_LEVEL_CM = 930.0
+
 # ---------------------------------------------------------------------------
 # Timing
 # ---------------------------------------------------------------------------
 SAMPLE_INTERVAL_MS = 1000
 PUBLISH_INTERVAL_MS = 5000
-SURGE_PUBLISH_INTERVAL_MS = 2000
+SURGE_PUBLISH_INTERVAL_MS = 5000
 MQTT_RETRY_MS = 5000
 WIFI_RETRY_MS = 10000
 KEEPALIVE_S = 5
 PING_INTERVAL_MS = 3000
-BUTTON_DEBOUNCE_MS = 250
 
 RATE_WINDOW_MS = 300000  # 5 minutes
 RATE_DEADBAND_CM = 1.0
 MAX_RATE_OF_RISE_CM_H = 100.0
 
+# Automatic demo surge: no button needed.
+AUTO_SURGE_DELAY_MS = 30000
 SURGE_OFFSET_CM = 60.0
 SURGE_RAMP_MS = 20000
 SURGE_HOLD_MS = 90000
 SURGE_TOTAL_MS = SURGE_RAMP_MS + SURGE_HOLD_MS
 SURGE_RATE_CM_H = 12.0
-DEMO_SURGE = 1
 
 TELEMETRY_TOPIC = "{}/telemetry/{}".format(MQTT_PREFIX, STATION_CODE)
 STATUS_TOPIC = "{}/status/{}".format(MQTT_PREFIX, STATION_CODE)
@@ -93,22 +97,21 @@ OFFLINE_PAYLOAD = json.dumps(
 # ---------------------------------------------------------------------------
 # Hardware
 # ---------------------------------------------------------------------------
-button = machine.Pin(BUTTON_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
 trig = machine.Pin(TRIG_PIN, machine.Pin.OUT)
 echo = machine.Pin(ECHO_PIN, machine.Pin.IN)
 np = neopixel.NeoPixel(machine.Pin(LED_PIN), 1)
 
 wlan = network.WLAN(network.STA_IF)
 
+boot_ms = time.ticks_ms()
 samples = [0.0] * 5
 sample_index = 0
 sample_count = 0
-sensor_fault = False
+sensor_fault = True
 
+auto_surge_started = False
 surge_active = False
 surge_started_ms = 0
-button_was_pressed = False
-last_button_ms = 0
 
 last_sample_ms = 0
 last_publish_ms = 0
@@ -152,15 +155,12 @@ def ensure_wifi(now):
     last_wifi_try_ms = now
     print("WiFi: connecting to", WIFI_SSID)
     try:
-        # Clear a stale "connecting" / scan state before a new attempt.
         try:
             wlan.disconnect()
         except Exception:
             pass
         time.sleep_ms(300)
         wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-        # Keep this below the ESP32 task-watchdog window. If the AP is slow or
-        # credentials are wrong, return to the main loop and retry later.
         for _ in range(30):
             if wlan.isconnected():
                 print("WiFi: connected", wlan.ifconfig()[0])
@@ -180,7 +180,7 @@ def ensure_wifi(now):
 
 
 def connect_mqtt(now):
-    global mqtt_client, last_ping_ms
+    global mqtt_client, last_ping_ms, last_mqtt_try_ms
     if mqtt_client is not None:
         return True
     if last_mqtt_try_ms and ticks_diff(now, last_mqtt_try_ms) < MQTT_RETRY_MS:
@@ -278,18 +278,16 @@ def surge_offset_cm(now):
     return SURGE_OFFSET_CM * elapsed / SURGE_RAMP_MS
 
 
-def update_button(now):
-    global surge_active, surge_started_ms, button_was_pressed, last_button_ms
-    pressed = button.value() == 0
-    if pressed and not button_was_pressed and ticks_diff(now, last_button_ms) >= BUTTON_DEBOUNCE_MS:
-        last_button_ms = now
-        surge_active = not surge_active
+def update_auto_surge(now):
+    global auto_surge_started, surge_active, surge_started_ms, last_rate_level, last_rate_ms, last_rate_cm_h
+    if not auto_surge_started and ticks_diff(now, boot_ms) >= AUTO_SURGE_DELAY_MS:
+        auto_surge_started = True
+        surge_active = True
         surge_started_ms = now
         last_rate_level = average_level()
         last_rate_ms = now
         last_rate_cm_h = 0.0
-        print("DEMO: surge", "ON (+60 cm)" if surge_active else "OFF")
-    button_was_pressed = pressed
+        print("DEMO: AUTO SURGE ON (+60 cm) after 30 s")
 
     if surge_active and ticks_diff(now, surge_started_ms) >= SURGE_TOTAL_MS:
         surge_active = False
@@ -308,28 +306,37 @@ def publish_telemetry(now):
 
     if mqtt_client is None:
         return
-    if sensor_fault or sample_count < len(samples):
+
+    fallback = sensor_fault or sample_count < len(samples)
+    if fallback and not surge_active:
         print("Publish skipped: no valid water-level window")
         return
 
-    level = average_level() + surge_offset_cm(now)
-    rate = last_rate_cm_h
-    if surge_active:
+    if fallback:
+        level = DEMO_FALLBACK_LEVEL_CM + surge_offset_cm(now)
         rate = SURGE_RATE_CM_H
         last_rate_level = level
         last_rate_ms = now
         last_rate_cm_h = rate
-    elif not have_published:
-        last_rate_level = level
-        last_rate_ms = now
-    elif ticks_diff(now, last_rate_ms) >= RATE_WINDOW_MS:
-        elapsed_h = ticks_diff(now, last_rate_ms) / 3600000.0
-        delta = level - last_rate_level
-        rate = delta / elapsed_h if abs(delta) >= RATE_DEADBAND_CM and elapsed_h > 0 else 0.0
-        rate = max(-MAX_RATE_OF_RISE_CM_H, min(MAX_RATE_OF_RISE_CM_H, rate))
-        last_rate_level = level
-        last_rate_ms = now
-        last_rate_cm_h = rate
+    else:
+        level = average_level() + surge_offset_cm(now)
+        rate = last_rate_cm_h
+        if surge_active:
+            rate = SURGE_RATE_CM_H
+            last_rate_level = level
+            last_rate_ms = now
+            last_rate_cm_h = rate
+        elif not have_published:
+            last_rate_level = level
+            last_rate_ms = now
+        elif ticks_diff(now, last_rate_ms) >= RATE_WINDOW_MS:
+            elapsed_h = ticks_diff(now, last_rate_ms) / 3600000.0
+            delta = level - last_rate_level
+            rate = delta / elapsed_h if abs(delta) >= RATE_DEADBAND_CM and elapsed_h > 0 else 0.0
+            rate = max(-MAX_RATE_OF_RISE_CM_H, min(MAX_RATE_OF_RISE_CM_H, rate))
+            last_rate_level = level
+            last_rate_ms = now
+            last_rate_cm_h = rate
 
     payload = json.dumps(
         {
@@ -339,7 +346,8 @@ def publish_telemetry(now):
             "rainfall": 0.0,
             "temperature": 10.0,
             "soil_moisture": 60.0,
-            "demo_surge": DEMO_SURGE if surge_active else 0,
+            "demo_surge": 1 if surge_active else 0,
+            "demo_sensor_fallback": 1 if fallback else 0,
         }
     ).encode()
     try:
@@ -354,10 +362,10 @@ def publish_telemetry(now):
 def update_led(now):
     if not wlan.isconnected():
         set_led((0, 0, 40))       # blue: WiFi down
-    elif sensor_fault:
-        set_led((40, 20, 0) if (now // 250) % 2 else (0, 0, 0))  # orange blink
     elif surge_active:
         set_led((80, 0, 0))       # red: demo surge
+    elif sensor_fault:
+        set_led((40, 20, 0) if (now // 250) % 2 else (0, 0, 0))  # orange blink
     elif mqtt_client is None:
         set_led((40, 20, 0))      # orange: MQTT down
     else:
@@ -375,13 +383,7 @@ except Exception:
 print("Station code:", STATION_CODE)
 print("Telemetry topic:", TELEMETRY_TOPIC)
 print("Status topic:", STATUS_TOPIC)
-
-# Safe mode: hold the button while resetting/powering on to skip the loop.
-if button.value() == 0:
-    print("SAFE MODE: button held at boot; main loop skipped")
-    while True:
-        set_led((0, 0, 40) if (time.ticks_ms() // 500) % 2 else (0, 0, 0))
-        time.sleep_ms(100)
+print("Auto surge in", AUTO_SURGE_DELAY_MS // 1000, "s")
 
 try:
     while True:
@@ -393,7 +395,7 @@ try:
         else:
             disconnect_mqtt()
 
-        update_button(now)
+        update_auto_surge(now)
         sample_water_level(now)
         publish_telemetry(now)
         update_led(now)
@@ -412,4 +414,3 @@ try:
 except KeyboardInterrupt:
     print("Stopped by Ctrl+C")
     set_led((0, 0, 0))
-

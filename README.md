@@ -146,7 +146,7 @@ Arduino / симулятор → публичный MQTT → backend MQTT bridge
 - **Топик статуса:** `saqta/floodwatch/sko-demo/status/<station_code>` (Last Will `offline`).
 - **Payload:** `station_code`, `water_level`, `rate_of_rise`, `rainfall`, `temperature`, `soil_moisture`, `demo_surge`.
 - **Скетч:** `arduino/floodwatch_station/floodwatch_station.ino` — Arduino Uno R3 + Ethernet W5100 + HC-SR04 + DHT22, кнопка demo-surge на D3, публикация каждые 5 секунд.
-- **LMS-ESP32 v2:** `lms-esp32/main.py` — MicroPython-порт с Wi-Fi, той же кнопкой и MQTT-контрактом.
+- **LMS-ESP32 v2:** `lms-esp32/main.py` — MicroPython-порт с Wi-Fi, автоматическим surge через 30 секунд (без кнопки) и тем же MQTT-контрактом.
 - **Инструкция и сценарий:** [arduino/README.md](arduino/README.md) и [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md).
 - **Публичный брокер для демо:** `broker.hivemq.com:1883`. Для production используйте приватный брокер с TLS и паролем.
 - **Mock-публикатор:**

@@ -23,16 +23,17 @@ operator queue → map / logs / bulletin → network disconnect → offline stat
 | HC-SR04 | VCC 5V, GND, TRIG D6, ECHO D7 |
 | DHT11/22 | VCC 5V, GND, DATA D2 + 10k pull-up |
 | Status LED | D5 → 330 Ω → GND |
-| **Demo surge button** | **D3 → GND** (internal pull-up) |
 
-The button adds a virtual **+60 cm** over 20 s, holds 90 s, then resets.
-Press again to reset immediately. It is marked as `demo_surge` in the payload.
+Arduino: the button adds a virtual **+60 cm** over 20 s, holds 90 s, then
+resets. LMS-ESP32 v2: the same surge starts automatically 30 s after boot, no
+button needed. It is marked as `demo_surge` in the payload.
 
 ### Alternative: LMS-ESP32 v2 (MicroPython)
 
 If you use the LMS-ESP32 v2 instead of the Arduino Uno, the ready firmware is in
-[`lms-esp32/`](../lms-esp32/). It uses the same station code, topics, button
-logic and Last Will, but Wi-Fi instead of Ethernet and 3.3 V GPIO. **HC-SR04
+[`lms-esp32/`](../lms-esp32/). It uses the same station code, topics,
+automatic 30-second surge and Last Will, but Wi-Fi instead of Ethernet and
+3.3 V GPIO. **HC-SR04
 ECHO must go through a 1k/2k divider** — see
 [`lms-esp32/README.md`](../lms-esp32/README.md).
 
@@ -95,7 +96,7 @@ The first telemetry message flips it to «В сети» and fills the card/chart
 3. Initial water depth `d`; `D_start = H - d`.
 4. `STATION_DATUM_OFFSET_CM = 930 - H + D_start`.
 5. Confirm the serial/API shows about `930 cm` (green, below warning).
-6. Press the button: level ramps to about `990 cm` → high risk.
+6. Arduino: press the button. LMS: wait 30 s. Level ramps to about `990 cm` → high risk.
 
 ## 6. Scene script (≈6 minutes)
 
@@ -104,11 +105,11 @@ The first telemetry message flips it to «В сети» and fills the card/chart
 | 0:00 | Problem + architecture: device → public MQTT → backend → ML → operator |
 | 1:00 | Map, station health, thresholds 940/980, bulletin |
 | 2:00 | Arduino on table, serial monitor, «Логи датчиков» filtered to the station |
-| 3:00 | Press the button: risk rises, red marker, red districts, operator toast |
+| 3:00 | Arduino button / LMS auto-surge: risk rises, red marker, red districts, operator toast |
 | 3:30 | Queue: explanation, forecast, **Одобрить и опубликовать** |
 | 4:15 | Public alert, «Журнал решений», updated bulletin |
 | 4:45 | Pull Ethernet/power: station becomes offline in ~8–15 s, marker grays, toast |
-| 5:15 | Reconnect / press button again: station online, level returns to baseline |
+| 5:15 | Reconnect / reset: station online, level returns to baseline |
 | 5:45 | Close: pilot cost, integration with Kazhydromet/DChS, mobile apps |
 
 ## 7. Reset between rehearsals
@@ -156,7 +157,7 @@ Last Will), so the unhealthy-station scene still works.
       shows telemetry and status.
 - [ ] The station exists in the dashboard and shows «В сети».
 - [ ] Baseline is ~930 cm, warning 940 / critical 980.
-- [ ] Button toggles surge; LED is solid during surge.
+- [ ] Arduino button or LMS 30-second auto-surge works; LED is solid during surge.
 - [ ] Operator logged in; queue and logs tabs open.
 - [ ] Pulling the Ethernet cable produces «Нет связи» within ~15 s.
 - [ ] `demo_reset.py` has been run after the last rehearsal.
