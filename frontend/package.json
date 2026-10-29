@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile": "vite build --mode mobile",
     "preview": "vite preview",
     "cap:build": "npm run build && npx cap sync",
+    "cap:build:mobile": "npm run build:mobile && npx cap sync",
+    "android:apk": "cd android && ./gradlew assembleDebug",
     "cap:sync": "npx cap sync",
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",

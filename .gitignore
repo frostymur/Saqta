@@ -36,3 +36,12 @@ frontend/node_modules/
 .vscode/
 .idea/
 *.swp
+
+# Local env files and signing keys (never commit)
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+!frontend/.env.mobile.example
+*.jks
+*.keystore

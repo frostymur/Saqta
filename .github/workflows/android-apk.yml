@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build mobile web assets
+        working-directory: frontend
+        env:
+          VITE_API_BASE: https://saqta.onrender.com/api
+          VITE_WS_URL: wss://saqta.onrender.com/ws
+        run: npm run build:mobile
+
+      - name: Sync Capacitor
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saqta-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
