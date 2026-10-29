@@ -947,7 +947,7 @@ function DashboardMockup({ t }) {
 
 function MobileNotification({ t }) {
   return (
-    <div className="absolute bottom-[-40px] right-[-5px] z-30 w-[120px] rotate-[8deg] sm:bottom-[-42px] sm:right-[-30px] sm:w-[145px] lg:right-[-65px]">
+    <div className="absolute bottom-[-44px] right-[-10px] z-30 w-[152px] rotate-[8deg] sm:bottom-[-48px] sm:right-[-38px] sm:w-[184px] lg:right-[-78px] lg:w-[205px]">
       {/* Phone shadow */}
       <div className="absolute inset-0 translate-y-4 scale-95 rounded-[30px] bg-slate-900/20 blur-xl" />
 
