@@ -185,6 +185,7 @@ async def _apply_status(station_id, station_code, state: str) -> None:
             return
 
         station.status = "offline" if state == "offline" else ("error" if state == "error" else "active")
+        station.last_seen = datetime.datetime.utcnow()
         db.commit()
         latest = (
             db.query(Telemetry)

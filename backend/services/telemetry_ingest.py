@@ -35,6 +35,7 @@ async def ingest_telemetry(db: Session, payload: TelemetryCreate) -> Telemetry:
 
     station_id = station.id
     station.status = "active"
+    station.last_seen = datetime.datetime.utcnow()
     timestamp = _naive_utc(payload.timestamp) or datetime.datetime.utcnow()
 
     rate_of_rise = payload.rate_of_rise

@@ -34,6 +34,7 @@ def ensure_schema() -> None:
     columns = {column["name"] for column in inspector.get_columns("stations")}
     column_defs = {
         "code": "VARCHAR(64)",
+        "last_seen": "TIMESTAMP",
         "water_body_type": "VARCHAR(50) DEFAULT 'urban'",
         "catchment_area_km2": "DOUBLE PRECISION",
         "response_time_h": "DOUBLE PRECISION",

@@ -147,7 +147,7 @@ def ensure_wifi(now):
     global last_wifi_try_ms
     if not wlan.active():
         wlan.active(True)
-        time.sleep_ms(500)
+        time.sleep_ms(200)
     if wlan.isconnected():
         return True
     if last_wifi_try_ms and ticks_diff(now, last_wifi_try_ms) < WIFI_RETRY_MS:
@@ -155,13 +155,9 @@ def ensure_wifi(now):
     last_wifi_try_ms = now
     print("WiFi: connecting to", WIFI_SSID)
     try:
-        try:
-            wlan.disconnect()
-        except Exception:
-            pass
-        time.sleep_ms(300)
+        # No disconnect() on the first attempt: it costs ~300 ms at boot.
         wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-        for _ in range(30):
+        for _ in range(50):
             if wlan.isconnected():
                 print("WiFi: connected", wlan.ifconfig()[0])
                 return True

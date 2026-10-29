@@ -26,6 +26,7 @@ class Station(Base):
     lng = Column(Float, nullable=False)
     hazard_type = Column(String(50), default="flood", nullable=False)  # 'flood', 'fire', 'air', 'landslide'
     status = Column(String(50), default="active", nullable=False)  # 'active', 'offline', 'error'
+    last_seen = Column(DateTime, nullable=True, index=True)  # last MQTT status/telemetry
     thresholds = Column(JSON, nullable=False)  # {"warn_level": 900, "crit_level": 980, "max_rate_of_rise": 10}
     water_body_type = Column(String(50), default="urban", nullable=False)  # 'urban', 'small_river', 'stream', 'reservoir'
     catchment_area_km2 = Column(Float, nullable=True)

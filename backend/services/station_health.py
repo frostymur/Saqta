@@ -11,11 +11,16 @@ HEALTH_OFFLINE_AFTER = datetime.timedelta(hours=24)
 
 
 def station_health(station: Station, latest: Optional[Telemetry]) -> str:
-    if station.status == "offline" or latest is None:
+    if station.status == "offline":
         return "offline"
-    if station.status == "error" or latest.is_valid is False:
+    if station.status == "error" or (latest is not None and latest.is_valid is False):
         return "error"
-    age = datetime.datetime.utcnow() - latest.timestamp
+    # MQTT status can mark a station online before the first telemetry arrives.
+    # Fall back to the last reading for databases created before last_seen.
+    last_seen = station.last_seen or (latest.timestamp if latest else None)
+    if last_seen is None:
+        return "offline"
+    age = datetime.datetime.utcnow() - last_seen
     if age >= HEALTH_OFFLINE_AFTER:
         return "offline"
     if age >= HEALTH_STALE_AFTER:
