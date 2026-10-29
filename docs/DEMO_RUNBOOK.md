@@ -113,13 +113,24 @@ The first telemetry message flips it to «В сети» and fills the card/chart
 
 ## 7. Reset between rehearsals
 
+Local SQLite:
+
 ```bash
 .venv/bin/python scripts/demo_reset.py --code arduino-bridge-01 --level 930
 ```
 
-This removes only that station's alerts and last 24 h of telemetry, inserts a
-flat 930 cm baseline and sets the station active. The rest of the database and
-other regions stay intact.
+Deployed Render/Postgres (admin-only API):
+
+```bash
+.venv/bin/python scripts/demo_reset_remote.py --scope all
+# or only one station:
+.venv/bin/python scripts/demo_reset_remote.py \
+  --scope station --station-code arduino-bridge-01 --level 930
+```
+
+`--scope all` clears alerts/telemetry for every station and re-seeds the calm
+baseline, keeping custom station codes. Station scope touches only that post.
+The rest of the database and other regions stay intact.
 
 If the station was not created yet, use `--station-id 3` for the seeded bridge
 station.

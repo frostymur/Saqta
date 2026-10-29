@@ -415,6 +415,7 @@ export default function Dashboard({
                   stations={stations}
                   onSelectDistrict={focusDistrict}
                   t={t}
+                  lang={currentLang}
                 />
               </div>
 
@@ -625,6 +626,7 @@ export default function Dashboard({
               onSelectDistrict={focusDistrict}
               onClose={() => setDistrictOpen(false)}
               t={t}
+              lang={currentLang}
               mobile
             />
           </div>

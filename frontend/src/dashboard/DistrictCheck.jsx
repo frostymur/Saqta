@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ChevronRight, MapPin, Search, ShieldCheck, X } from "lucide-react";
-import { haversineKm, normalizeHealth, stationRisk } from "./lib/format";
+import { formatRelative, haversineKm, normalizeHealth, stationRisk } from "./lib/format";
 
 const RISK_RADIUS_KM = 15;
 
@@ -52,6 +52,7 @@ export default function DistrictCheck({
   onClose,
   t,
   mobile = false,
+  lang = "en",
 }) {
   const [query, setQuery] = useState("");
 
@@ -141,7 +142,10 @@ export default function DistrictCheck({
                   <span className="block truncate text-[10px] font-semibold text-slate-700">{district.name}</span>
                   <span className="block truncate text-[8px] text-slate-400">
                     {state.nearest
-                      ? `${state.nearest.km.toFixed(1)} ${t("common.km")} · ${state.nearest.station.name}`
+                      ? `${state.nearest.km.toFixed(1)} ${t("common.km")} · ${formatRelative(
+                          state.nearest.station.last_updated,
+                          lang
+                        )} · ${state.nearest.station.name}`
                       : district.nameEn}
                   </span>
                 </span>

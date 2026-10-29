@@ -128,7 +128,10 @@ export default function AlertsCenter({
 
                   <p className="mt-3 text-[11px] leading-5 text-slate-600">{alert.explanation}</p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <p className="mt-2 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                    {t("alerts.horizon")}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {[
                       ["+1h", alert.forecast_1h],
                       ["+2h", alert.forecast_2h],

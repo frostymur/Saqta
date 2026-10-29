@@ -528,6 +528,10 @@ export default function FloodMap({
         ))}
       </div>
 
+      <div className="pointer-events-none absolute bottom-[62px] right-3 z-10 hidden max-w-[280px] rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-[9px] leading-4 text-slate-500 shadow-sm backdrop-blur md:block">
+        {t("map.zoneNote")}
+      </div>
+
       {zoom < 10.5 && (
         <div className="pointer-events-none absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-slate-900/80 px-3 py-1 text-[10px] font-medium text-white">
           {t("map.station")}

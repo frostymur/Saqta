@@ -954,7 +954,7 @@ function MobileNotification({ t }) {
       {/* Phone body */}
       <div className="relative rounded-[27px] border-[3px] border-slate-800 bg-slate-900 p-[4px] shadow-[0_25px_50px_-15px_rgba(15,23,42,0.45)]">
         {/* Screen */}
-        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-b from-[#163d4c] via-[#0c3541] to-[#06303b]">
+        <div className="relative flex aspect-[9/19.5] flex-col justify-between overflow-hidden rounded-[22px] bg-gradient-to-b from-[#163d4c] via-[#0c3541] to-[#06303b]">
           {/* Status bar */}
           <div className="flex items-center justify-between px-3 pt-2.5 text-[6px] text-white/80 sm:pt-3">
             <span>{t.phone.time}</span>
